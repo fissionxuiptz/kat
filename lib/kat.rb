@@ -20,7 +20,7 @@ class Kat
   def initialize search_term = nil, opts = {}
     @search_term = []
     @options = opts.is_a?(Hash) ? opts : {}
-    self.query = search_term.is_a? Array ? search_term.dup : search_term
+    self.query = search_term.is_a?(Array) ? search_term.dup : search_term
   end
 
   def self.search search_term
