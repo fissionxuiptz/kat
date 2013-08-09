@@ -12,6 +12,8 @@ Gem::Specification.new do |s|
   s.homepage      = 'http://github.com/fissionxuiptz/kat'
   s.license       = 'MIT'
 
+  s.rubyforge_project = 'kat'
+
   s.summary       = 'Kickass Torrents Interface'
   s.description   = 'A Ruby interface to Kickass Torrents'
 
