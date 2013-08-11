@@ -1,4 +1,10 @@
 require 'minitest/autorun'
+
+begin
+  require 'minitest/pride'
+rescue LoadError
+end
+
 require 'kat'
 
 describe Kat do
@@ -62,8 +68,13 @@ describe Kat do
     it 'returns 50 results for each result field' do
       @kat[:vanilla].search
       @kat[:vanilla].search(1)
-      [ :titles, :magnets, :downloads, :sizes, :files, :ages, :seeds, :leeches ].each do |s|
-        @kat[:vanilla].send(s).size.must_equal 50
+      if @kat[:vanilla].respond_to? :titles
+        [ :titles, :magnets, :downloads, :sizes, :files, :ages, :seeds, :leeches ].each do |s|
+          @kat[:vanilla].send(s).size.must_equal 50
+        end
+      else
+        # Returning a failure, not an error
+        proc { @kat[:vanilla].titles }.wont_raise NoMethodError
       end
     end
   end
