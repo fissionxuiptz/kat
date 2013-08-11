@@ -19,9 +19,6 @@ class Kat
 
   SORT_FIELDS   = %w(size files_count time_add seeders leechers)
 
-  # The results cache
-  attr_reader :results
-
   # The number of pages of results
   attr_reader :pages
 
@@ -135,7 +132,14 @@ class Kat
       end
     end
 
-    @results[page]
+    results[page]
+  end
+
+  #
+  # Get a copy of the results
+  #
+  def results
+    @results.dup
   end
 
   #
@@ -143,7 +147,10 @@ class Kat
   # if we can fetch the list of values. It'll only happen after a successful search.
   #
   def respond_to? method_sym, include_private = false
-    return true if not @results.empty? and (@results.last.first[method_sym] or @results.last.first[method_sym.to_s.chop.to_sym])
+    if not (@results.empty? or @results.last.empty?) and
+           (@results.last.first[method_sym] or @results.last.first[method_sym.to_s.chop.to_sym])
+      return true
+    end
     super
   end
 
@@ -174,11 +181,11 @@ private
   def method_missing method_sym, *arguments, &block
     # Don't need no fancy schmancy pluralizing method. Just try chopping off the 's'.
     m = method_sym.to_s.chop.to_sym
-    if not @results.empty? and (@results.last.first[method_sym] or @results.last.first[m])
-      @results.compact.map {|rs| rs.map {|r| r[method_sym] || r[m] } }.flatten
-    else
-      super
+    if not (@results.empty? or @results.last.empty?) and
+           (@results.last.first[method_sym] or @results.last.first[m])
+      return @results.compact.map {|rs| rs.map {|r| r[method_sym] || r[m] } }.flatten
     end
+    super
   end
 
 end
