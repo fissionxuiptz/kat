@@ -6,7 +6,7 @@ require 'kat/version'
 Gem::Specification.new do |s|
   s.name          = 'kat'
   s.version       = Kat::VERSION
-  s.date          = '2013-08-09'
+  s.date          = Time.new.strftime '%Y-%m-%d'
   s.author        = 'Fission Xuiptz'
   s.email         = 'fissionxuiptz@softwaremojo.com'
   s.homepage      = 'http://github.com/fissionxuiptz/kat'

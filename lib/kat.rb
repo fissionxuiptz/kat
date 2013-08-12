@@ -5,8 +5,8 @@ require 'open-uri'
 
 class Kat
   KAT_URL = 'http://kickass.to'
-  EMPTY_URL = "new"
-  SEARCH_URL = "usearch"
+  EMPTY_URL = 'new'
+  SEARCH_URL = 'usearch'
   ADVANCED_URL = "#{KAT_URL}/torrents/search/advanced/"
 
   STRING_FIELDS = [ :category, :seeds, :user, :age, :files, :imdb, :season, :episode ]
@@ -27,19 +27,19 @@ class Kat
 
   #
   # Create a new +Kat+ object to search Kickass Torrents.
-  #
-  # The search term can be nil, a string/symbol, or an array of strings/symbols.
-  #
-  # Valid options are in STRING_FIELDS, SELECT_FIELDS or SWITCH_FIELDS
+  # The search_term can be nil, a string/symbol, or an array of strings/symbols.
+  # Valid options are in STRING_FIELDS, SELECT_FIELDS or SWITCH_FIELDS.
   #
   def initialize search_term = nil, opts = {}
     @search_term = []
-    @options = opts.is_a?(Hash) ? opts : {}
-    self.query = search_term.is_a?(Array) ? search_term.dup : search_term
+    @options = {}
+
+    self.query = search_term
+    self.options = opts
   end
 
   #
-  # Use Kat.search(search_term) to do a quick search
+  # Kat.search will do a quick search and return the results
   #
   def self.search search_term
     self.new(search_term).search
@@ -48,21 +48,20 @@ class Kat
   #
   # Generate a query string from the stored options, supplying an optional page number
   #
-  def query page = 0
-    q = [ SEARCH_URL, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '') ]
-    q = [ EMPTY_URL ] if q[1].empty?
-    q << page + 1 if page > 0
-    q << if SORT_FIELDS.include? @options[:sort].to_s
+  def query_str page = 0
+    str = [ SEARCH_URL, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '') ]
+    str = [ EMPTY_URL ] if str[1].empty?
+    str << page + 1 if page > 0
+    str << if SORT_FIELDS.include? @options[:sort].to_s
       "?field=#{options[:sort].to_s}&sorder=#{options[:asc] ? 'asc' : 'desc'}"
     else
       ''    # ensure a trailing slash after the search terms or page number
     end
-    q.join '/'
+    str.join '/'
   end
 
   #
-  # Change the search term for the query, triggering a rebuild of the query string
-  # and clearing past results.
+  # Change the search term, triggering a query rebuild and clearing past results.
   #
   # Raises ArgumentError if search_term is not a String, Symbol or Array
   #
@@ -84,7 +83,7 @@ class Kat
   end
 
   #
-  # Change search options with a hash, triggering a rebuild of the query string and
+  # Change search options with a hash, triggering a query string rebuild and
   # clearing past results.
   #
   # Raises ArgumentError if opts is not a Hash
@@ -101,9 +100,9 @@ class Kat
   # cache results for subsequent calls of search with the same query string.
   #
   def search page = 0
-    unless query.empty? or @results[page] or (@pages > -1 and page >= @pages)
+    unless @results[page] or (@pages > -1 and page >= @pages)
       begin
-        doc = Nokogiri::HTML(open("#{KAT_URL}/#{URI::encode(query page)}"))
+        doc = Nokogiri::HTML(open("#{KAT_URL}/#{URI::encode(query_str page)}"))
         @results[page] = doc.css('td.torrentnameCell').map do |node|
           { :title    => node.css('a.normalgrey').text,
             :magnet   => node.css('a.imagnet').first.attributes['href'].value,
@@ -128,11 +127,19 @@ class Kat
       rescue => e
         # No result throws a 404 error.
         @pages = 0 if e.class == OpenURI::HTTPError and e.message['404 Not Found']
-        @error = { :error => e, :query => query(page) }
+        @error = { :error => e, :query => query_str(page) }
       end
     end
 
     results[page]
+  end
+
+  #
+  # For message chaining
+  #
+  def do_search page = 0
+    search page
+    self
   end
 
   #
