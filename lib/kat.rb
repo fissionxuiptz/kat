@@ -1,7 +1,6 @@
-# TODO: Lookup advanced search for language and platform values
-
 require 'nokogiri'
 require 'open-uri'
+require 'kat/version'
 
 class Kat
   KAT_URL = 'http://kickass.to'
@@ -9,13 +8,16 @@ class Kat
   SEARCH_URL = 'usearch'
   ADVANCED_URL = "#{KAT_URL}/torrents/search/advanced/"
 
-  STRING_FIELDS = [ :category, :seeds, :user, :age, :files, :imdb, :season, :episode ]
-
-  # The names of these fields are transposed for ease of use
-  SELECT_FIELDS = [ { :name => :language, :id => :lang_id }, { :name => :platform, :id => :platform_id } ]
+  STRING_FIELDS = [ :seeds, :user, :files, :imdb, :season, :episode ]
 
   # If these are set to anything but nil or false, they're turned on in the query
   SWITCH_FIELDS = [ :safe, :verified ]
+
+  # The names of these fields are transposed for ease of use
+  SELECT_FIELDS = [ { :name => :categories, :label => :category, :id => :category },
+                    { :name => :times,      :label => :added,    :id => :age },
+                    { :name => :languages,  :label => :language, :id => :lang_id },
+                    { :name => :platforms,  :label => :platform, :id => :platform_id } ]
 
   SORT_FIELDS   = %w(size files_count time_add seeders leechers)
 
@@ -24,6 +26,8 @@ class Kat
 
   # Any error in searching is stored here
   attr_reader :error
+
+  @@doc = nil
 
   #
   # Create a new +Kat+ object to search Kickass Torrents.
@@ -150,7 +154,14 @@ class Kat
   end
 
   #
-  # If the method_sym or its plural is a field name in the results list, this will tell us
+  # If method_sym is a field name in SELECT_FIELDS, we can fetch the list of values.
+  #
+  def self.respond_to? method_sym, include_private = false
+    SELECT_FIELDS.find {|field| field[:name] == method_sym } ? true : super
+  end
+
+  #
+  # If method_sym or its plural is a field name in the results list, this will tell us
   # if we can fetch the list of values. It'll only happen after a successful search.
   #
   def respond_to? method_sym, include_private = false
@@ -177,20 +188,58 @@ private
     @query += @options[:without].map {|s| "-#{s}" } if @options[:without]
 
     STRING_FIELDS.each {|f| @query << "#{f}:#{@options[f]}" if @options[f] }
-    SELECT_FIELDS.each {|f| @query << "#{f[:id]}:#{@options[f[:name]]}" if @options[f[:name]].to_i > 0 }
     SWITCH_FIELDS.each {|f| @query << "#{f}:1" if @options[f] }
+    SELECT_FIELDS.each do |f|
+      if (@options[f[:label]].to_s.to_i > 0 and f[:id].to_s['_id']) or
+         (@options[f[:label]] and not f[:id].to_s['_id'])
+        @query << "#{f[:id]}:#{@options[f[:label]]}"
+      end
+    end
+  end
+
+  #
+  # Get a list of options for a particular selection field from the advanced search form
+  #
+  # Raises an error unless the label is in SELECT_FIELDS
+  #
+  def self.field_options label
+    begin
+      raise 'Unknown search field' unless SELECT_FIELDS.find {|f| f[:label] == label.to_sym }
+
+      opts = (@@doc ||= Nokogiri::HTML(open(ADVANCED_URL))).css('table.formtable td').find do |e|
+        e.text[/#{label.to_s}/i]
+      end.next_element.first_element_child.children
+
+      unless (group = opts.css('optgroup')).empty?
+        # Categories
+        group.inject({}) {|c, og| c[og.attributes['label'].value] = og.children.map {|o| o.attributes['value'].value }; c }
+      else
+        # Times, languages, platforms
+        opts.reject {|o| o.attributes.empty? }.inject({}) {|p, o| p[o.text] = o.attributes['value'].value; p }
+      end
+    rescue => e
+      { :error => e }
+    end
+  end
+
+  #
+  # If method_sym is a field name in SELECT_FIELDS, fetch the list of values.
+  #
+  def self.method_missing method_sym, *args, &block
+    if respond_to? method_sym
+      return self.field_options SELECT_FIELDS.find {|field| field[:name] == method_sym }[:label]
+    end
+    super
   end
 
   #
   # If method_sym or its plural form is a field name in the results list, fetch the list of values.
   # Can only happen after a successful search.
   #
-  def method_missing method_sym, *arguments, &block
-    # Don't need no fancy schmancy pluralizing method. Just try chopping off the 's'.
-    m = method_sym.to_s.chop.to_sym
-    if not (@results.empty? or @results.last.empty?) and
-           (@results.last.first[method_sym] or @results.last.first[m])
-      return @results.compact.map {|rs| rs.map {|r| r[method_sym] || r[m] } }.flatten
+  def method_missing method_sym, *args, &block
+    if respond_to? method_sym
+      # Don't need no fancy schmancy singularizing method. Just try chopping off the 's'.
+      return @results.compact.map {|rs| rs.map {|r| r[method_sym] || r[method_sym.to_s.chop.to_sym] } }.flatten
     end
     super
   end

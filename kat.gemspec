@@ -12,8 +12,6 @@ Gem::Specification.new do |s|
   s.homepage      = 'http://github.com/fissionxuiptz/kat'
   s.license       = 'MIT'
 
-  s.rubyforge_project = 'kat'
-
   s.summary       = 'Kickass Torrents Interface'
   s.description   = 'A Ruby interface to Kickass Torrents'
 
@@ -22,5 +20,8 @@ Gem::Specification.new do |s|
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
   s.require_paths = [ 'lib' ]
 
-  s.add_runtime_dependency 'nokogiri'
+  s.add_runtime_dependency 'nokogiri', '~> 1.6'
+  s.add_runtime_dependency 'highline', '~> 1.6'
+  s.add_runtime_dependency 'trollop', '~> 2.0'
+  s.add_development_dependency 'minitest', '~> 5'
 end

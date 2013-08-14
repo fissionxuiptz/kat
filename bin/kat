@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+
+e = []
+
+require 'open-uri'
+%w(kat trollop highline).sort.each do |lib|
+  begin
+    require lib
+  rescue LoadError
+    e << lib.sub(/_/, '')
+  end
+end
+
+unless e.empty?
+  puts <<-EOS
+Kickass Torrents Search relies on #{e.join(', ').sub(/^(.*), /, '\1 and ')}. To download the gem#{'s' if e.size > 1} type:
+
+  gem install #{e.join ' '}
+
+EOS
+  exit
+end
+
+VERSION_STR = "#{Kat::NAME} #{Kat::VERSION} (c) 2013 #{Kat::AUTHOR}"
+
+list_args = { :categories => :category, :times      => :added,
+              :languages  => :language, :platforms  => :platform }
+
+options = Trollop::options do
+  version VERSION_STR
+  banner <<-EOS
+#{VERSION_STR}
+
+Usage: #{File.basename __FILE__} [options] <query>+
+
+  Options:
+EOS
+
+  opt :exact,      'Exact phrase',              :type => :string
+  opt :or,         'Optional words',            :type => :string, :multi => true
+  opt :without,    'Without this word',         :type => :string, :multi => true
+
+  opt :sort,       'Sort field (size, files, time_add, seeders, leechers)', :type => :string
+  opt :asc,        'Ascending sort order (descending is default)', :type => :boolean
+
+  opt :added,      'Age of the torrent',        :type => :string, :short => :a
+  opt :category,   'Category',                  :type => :string, :short => :c
+  opt :files,      'Number of files',           :type => :int
+  opt :imdb,       'IMDB ID',                   :type => :int
+  opt :seeds,      'Minimum number of seeders', :type => :int, :short => :s
+  opt :user,       'Uploader',                  :type => :string
+  opt :season,     'Television season',         :type => :int
+  opt :episode,    'Television episode',        :type => :int, :short => :e
+
+  opt :language,   'Language',                  :type => :int
+  opt :platform,   'Game platform',             :type => :int
+
+  opt :safe,       'Family safety filter',      :type => :boolean
+  opt :verified,   'Verified',                  :type => :boolean, :short => :m
+
+  opt :output,     'Directory to save torrents in', :type => :string, :short => :o
+
+  list_args.each {|k, v| opt k, "List the #{k} that may be used with --#{v}", :type => :boolean }
+end
+
+unless list_args.select! {|k, v| options[k] }.empty?
+  puts VERSION_STR
+  list_args.each do |opt, label|
+    args = Kat.send opt
+    puts "\n  #{label.to_s.capitalize}"
+    puts unless args.values.first.is_a? Array
+    args.each {|k, v| puts v.is_a?(Array) ? "\n  %12s => #{v.join "\n\t\t  "}" % k : "  %-23s => #{v}" % k }
+    puts
+  end
+else
+  k = Kat.new ARGV.join(' '), options
+  h = HighLine.new
+  page = 0
+  puts VERSION_STR
+
+  loop do
+    r = k.search page
+    if r.nil?
+      puts "\nNo results"
+      break
+    end
+
+    n = page < k.pages - 1
+    p = page > 0
+
+    puts "\n%-72s S     L\n\n" % "Page #{page + 1} of #{k.pages}"
+    r.each_with_index do |t, i|
+      puts "%2d. %-64s %5d %5d" % [ i + 1, t[:title][0..63], t[:seeds], t[:leeches] ]
+    end
+
+    commands = "[#{'n' if n}#{'p' if p}q]|"
+    _01to09  = "[1#{r.size >  9 ? '-9' : '-' + r.size.to_s}]"
+    _10to19  = "#{r.size   >  9 ? '|1[0-' + (r.size > 19 ? '9' : (r.size - 10).to_s) + ']' : ''}"
+    _20to25  = "#{r.size   > 19 ? '|2[0-' + (r.size - 20).to_s + ']' : ''}"
+    prompt   = "\n1#{r.size > 1 ? '-' + r.size.to_s : ''} to download" +
+               "#{', (n)ext' if n}" +
+               "#{', (p)rev' if p}" +
+               ', (q)uit: '
+
+    case (answer = h.ask(prompt) {|q| q.validate = /^(#{commands}#{_01to09}#{_10to19}#{_20to25})$/ })
+    when 'q' then break
+    when 'n' then page += 1 if n
+    when 'p' then page -= 1 if p
+    else
+      if (1..r.size).include? answer.to_i
+        torrent = k.results[page][answer.to_i - 1]
+        puts "\nDownloading: #{torrent[:title]}"
+
+        begin
+          uri = URI torrent[:download]
+          uri.query = nil
+          response = uri.read
+          file = "#{File.expand_path(options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
+          File.open(file, 'w') {|f| f.write response }
+        rescue => e
+          puts e.message
+        end
+      end
+    end
+  end
+  puts
+end
