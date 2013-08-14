@@ -23,5 +23,4 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'nokogiri', '~> 1.6'
   s.add_runtime_dependency 'highline', '~> 1.6'
   s.add_runtime_dependency 'trollop', '~> 2.0'
-  s.add_development_dependency 'minitest', '~> 5'
 end
