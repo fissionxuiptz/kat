@@ -1,5 +1,5 @@
 class Kat
   NAME = 'Kickass Torrents Search'
-  VERSION = '0.3.0'
+  VERSION = '1.0.0'
   AUTHOR = 'Fission Xuiptz'
 end
