@@ -1,5 +1,3 @@
-class Kat
-  NAME = 'Kickass Torrents Search'
+module Kat
   VERSION = '1.0.0'
-  AUTHOR = 'Fission Xuiptz'
 end

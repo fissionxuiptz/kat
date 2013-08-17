@@ -1,17 +1,17 @@
 require 'minitest/autorun'
 require 'kat'
 
-blue_peter = Kat.new
+blue_peter = Kat.search
 blue_peter.do_search.do_search 1
 
 describe Kat do
 
-  let(:kat) { Kat.new 'test' }
-  let(:kat_opts) { Kat.new 'test', { :category => 'books' } }
+  let(:kat) { Kat.search 'test' }
+  let(:kat_opts) { Kat.search 'test', { :category => 'books' } }
 
   describe 'basic search' do
     it 'returns a full result set' do
-      Kat.search('test').size.must_equal 25
+      Kat.quick_search('test').size.must_equal 25
     end
   end
 
@@ -29,7 +29,7 @@ describe Kat do
 
     it 'returns a valid query string based on many options' do
       kat_opts.options = { :files => 2, :safe => true, :language => 2, :sort => :files_count, :asc => true, :seeds => 2 }
-      kat_opts.query_str(1).must_equal 'usearch/test seeds:2 files:2 safe:1 category:books lang_id:2/2/?field=files_count&sorder=asc'
+      kat_opts.query_str(1).must_equal 'usearch/test files:2 seeds:2 safe:1 category:books lang_id:2/2/?field=files_count&sorder=asc'
     end
 
     it 'wont respond to result fields before a search' do
@@ -88,35 +88,35 @@ describe Kat do
 
   describe 'field options' do
     it 'returns a list of time added options' do
-      times = Kat.times
+      times = Kat::Search.times
       times.must_be_instance_of Hash
       times.wont_be_empty
       times[:error].must_be_nil
     end
 
     it 'returns a list of categories' do
-      categories = Kat.categories
+      categories = Kat::Search.categories
       categories.must_be_instance_of Hash
       categories.wont_be_empty
       categories[:error].must_be_nil
     end
 
     it 'returns a list of languages' do
-      languages = Kat.languages
+      languages = Kat::Search.languages
       languages.must_be_instance_of Hash
       languages.wont_be_empty
       languages[:error].must_be_nil
     end
 
     it 'returns a list of platforms' do
-      platforms = Kat.platforms
+      platforms = Kat::Search.platforms
       platforms.must_be_instance_of Hash
       platforms.wont_be_empty
       platforms[:error].must_be_nil
     end
 
     it 'returns an error' do
-      Kat.field_options(:foobar)[:error].must_be_instance_of RuntimeError
+      Kat::Search.class_exec { field_options :foobar }[:error].must_be_instance_of RuntimeError
     end
   end
 end
