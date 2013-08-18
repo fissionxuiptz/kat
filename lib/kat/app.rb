@@ -41,16 +41,10 @@ module Kat
       puts VERSION_STR
 
       Kat::Search.selects.select {|k, v| @options[v[:select]] }.tap do |lists|
-        unless lists.empty?
-          list_args.each do |k, v|
-            list_args = Kat.send v[:select]
-            puts "\n  #{v[:select].to_s.capitalize}"
-            puts unless Array === list_args.values.first
-            list_args.each {|k, v| puts Array === v ? "\n  %12s => #{v.join "\n\t\t  "}" % k : "  %-23s => #{v}" % k }
-            puts
-          end
-        else
+        if lists.empty?
           while running; end
+        else
+          puts formatted_list_options lists
         end
       end
     end
@@ -103,6 +97,21 @@ module Kat
       end
 
       return 1
+    end
+
+    def formatted_list_options lists
+      lists.inject([ nil ]) do |buf, (k, v)|
+        opts = Kat::Search.send v[:select]
+        buf << v[:select].to_s.capitalize
+        buf << nil unless Array === opts.values.first
+        width = opts.keys.sort {|a, b| b.size <=> a.size }[0].size
+        opts.each do |k, v|
+          buf += (Array === v ?
+            [ nil, "%#{width}s => #{v.shift}" % k ] + v.map {|e| ' ' * (width + 4) + e } :
+            [ "%-#{width}s => #{v}" % k ])
+        end
+        buf << nil
+      end
     end
 
   end
