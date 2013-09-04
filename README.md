@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/fissionxuiptz/kat.png)](http://travis-ci.org/fissionxuiptz/kat)
+
 # Kat
 
 A Ruby interface to Kickass Torrents
