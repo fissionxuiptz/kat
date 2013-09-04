@@ -1,3 +1,5 @@
+require 'kat/field_map'
+require 'kat/version'
 require 'trollop'
 
 module Kat

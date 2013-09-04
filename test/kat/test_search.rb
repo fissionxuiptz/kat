@@ -1,10 +1,10 @@
 require 'minitest/autorun'
-require 'kat'
+require 'kat/search'
 
 blue_peter = Kat.search
 blue_peter.do_search.do_search 1
 
-describe Kat do
+describe Kat::Search do
 
   let(:kat) { Kat.search 'test' }
   let(:kat_opts) { Kat.search 'test', { :category => 'books' } }

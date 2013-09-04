@@ -1,7 +1,13 @@
+require 'kat/field_map'
 require 'nokogiri'
 require 'open-uri'
 
 module Kat
+
+  BASE_URL     = 'http://kickass.to'
+  RECENT_PATH  = 'new'
+  SEARCH_PATH  = 'usearch'
+  ADVANCED_URL = "#{BASE_URL}/torrents/search/advanced/"
 
   class << self
     def search search_term = nil, opts = {}
