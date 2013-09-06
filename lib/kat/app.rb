@@ -60,7 +60,7 @@ module Kat
         if lists.empty?
           while running; end
         else
-          puts formatted_list_options lists
+          puts format_lists lists
         end
       end
     end
@@ -68,70 +68,45 @@ module Kat
   private
 
     def set_window_width
-      @window_width = HighLine::SystemExtensions.terminal_size[0]
+      @window_width = @h.terminal_size[0]
     end
 
     def hide_info?
       @window_width < 81
     end
 
+    def next?
+      @page < @kat.pages - 1
+    end
+
+    def prev?
+      @page > 0
+    end
+
     def running
-      r = @kat.search @page
-      if r.nil?
-        puts "\nNo results"
-        return false
-      end
-
-      n = @page < @kat.pages - 1
-      p = @page > 0
-
       set_window_width
 
-      main_width = @window_width - ((!hide_info? or @show_info) ? 42 : 4)
-      puts "\n%-#{main_width + 5}s#{'      Size    Age       Seeds Leeches' if !hide_info? or @show_info}\n\n" % "Page #{page + 1} of #{@kat.pages}"
-      r.each_with_index do |t, i|
-        age = t[:age].split "\xC2\xA0"
-        age = "%3d %-6s" % age
-        title = t[:title].codepoints.map {|c| c > 31 && c < 127 ? c.chr : '?' }.join[0...main_width]
-        puts "%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" % [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]
-      end
+      print "\nSearching..."
+      return puts "\rNo results  " unless @kat.search @page
 
-      commands = "[#{'i' if hide_info?}#{'n' if n}#{'p' if p}q]|"
-      _01to09  = "[1#{r.size >  9 ? '-9' : '-' + r.size.to_s}]"
-      _10to19  = "#{r.size   >  9 ? '|1[0-' + (r.size > 19 ? '9' : (r.size - 10).to_s) + ']' : ''}"
-      _20to25  = "#{r.size   > 19 ? '|2[0-' + (r.size - 20).to_s + ']' : ''}"
-      prompt   = "\n1#{r.size > 1 ? '-' + r.size.to_s : ''} to download" +
-                 "#{', (n)ext' if n}" +
-                 "#{', (p)rev' if p}" +
-                 "#{", #{@show_info ? 'hide' : 'show'} (i)nfo" if hide_info?}" +
-                 ', (q)uit: '
+      puts format_results
 
-      case (answer = @h.ask(prompt) {|q| q.validate = /^(#{commands}#{_01to09}#{_10to19}#{_20to25})$/ })
-      when 'q' then return false
+      case (answer = prompt)
       when 'i' then @show_info = !@show_info
-      when 'n' then @page += 1 if n
-      when 'p' then @page -= 1 if p
+      when 'n' then @page += 1 if next?
+      when 'p' then @page -= 1 if prev?
+      when 'q' then return false
       else
-        if (1..r.size).include? answer.to_i
-          torrent = r[answer.to_i - 1]
-          puts "\nDownloading: #{torrent[:title]}"
-
-          begin
-            uri = URI torrent[:download]
-            uri.query = nil
-            response = uri.read
-            file = "#{File.expand_path(options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
-            File.open(file, 'w') {|f| f.write response }
-          rescue => e
-            puts e.message
-          end
+        if (1..@kat.results[@page].size).include? (answer = answer.to_i)
+          print "\nDownloading: #{@kat.results[@page][answer - 1][:title]}... "
+          puts download @kat.results[@page][answer - 1]
         end
       end
 
       return true
     end
 
-    def formatted_list_options lists
+    def format_lists lists
       lists.inject([ nil ]) do |buf, (k, v)|
         opts = Kat::Search.send v[:select]
         buf << v[:select].to_s.capitalize
@@ -144,6 +119,56 @@ module Kat
         end
         buf << nil
       end
+    end
+
+    def format_results
+      main_width = @window_width - ((!hide_info? or @show_info) ? 42 : 4)
+      buf = [ "\r%-#{main_width + 5}s#{'      Size    Age       Seeds Leeches' if !hide_info? or @show_info}" %
+        "Page #{page + 1} of #{@kat.pages}" ]
+      buf << nil
+      @kat.results[@page].each_with_index do |t, i|
+        age = t[:age].split "\xC2\xA0"
+        age = "%3d %-6s" % age
+        # Filter out the crap that invariably infests torrent names
+        title = t[:title].codepoints.map {|c| c > 31 && c < 127 ? c.chr : '?' }.join[0...main_width]
+        buf << "%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" %
+          [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]
+      end
+      buf << nil
+    end
+
+    def validation_regex
+      n = @kat.results[@page].size
+      commands = "[#{'i' if hide_info?}#{'n' if next?}#{'p' if prev?}q]|"
+      _01to09  = "[1#{n >  9 ? '-9' : '-' + n.to_s}]"
+      _10to19  = "#{n   >  9 ? '|1[0-' + (n > 19 ? '9' : (n - 10).to_s) + ']' : ''}"
+      _20to25  = "#{n   > 19 ? '|2[0-' + (n - 20).to_s + ']' : ''}"
+      /^(#{commands}#{_01to09}#{_10to19}#{_20to25})$/
+    end
+
+    def prompt
+      n = @kat.results[@page].size
+      @h.ask("1#{n > 1 ? '-' + n.to_s : ''} to download" +
+             "#{', (n)ext' if next?}" +
+             "#{', (p)rev' if prev?}" +
+             "#{", #{@show_info ? 'hide' : 'show'} (i)nfo" if hide_info?}" +
+             ', (q)uit: ') do |q|
+        q.responses[:not_valid] = 'Invalid option.'
+        q.validate = validation_regex
+      end
+    end
+
+    def download torrent
+      begin
+        uri = URI torrent[:download]
+        uri.query = nil
+        response = uri.read
+        file = "#{File.expand_path(@options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
+        File.open(file, 'w') {|f| f.write response }
+      rescue => e
+        return [ "Failed", e.message ]
+      end
+      "Success"
     end
 
   end
