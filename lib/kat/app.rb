@@ -84,10 +84,27 @@ module Kat
     end
 
     def running
+      puts
       set_window_width
 
-      print "\nSearching..."
-      return puts "\rNo results  " unless @kat.search @page
+      searching = true
+      [
+        lambda do
+          @kat.search @page
+          searching = false
+        end,
+
+        lambda do
+          i = 0
+          while searching do
+            print "\rSearching... #{'\\|/-'[i % 4]}"
+            i += 1
+            sleep 0.1
+          end
+        end
+      ].map {|w| Thread.new { w.call } }.each(&:join)
+
+      return puts "\rNo results    " unless @kat.results[@page]
 
       puts format_results
 
