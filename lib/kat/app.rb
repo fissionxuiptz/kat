@@ -1,5 +1,6 @@
 require 'kat'
 require 'kat/options'
+require 'kat/colour'
 require 'highline'
 require 'yaml'
 
@@ -97,14 +98,14 @@ module Kat
         lambda do
           i = 0
           while searching do
-            print "\rSearching... #{'\\|/-'[i % 4]}"
+            print "\rSearching...".yellow + " #{'\\|/-'[i % 4]}"
             i += 1
             sleep 0.1
           end
         end
       ].map {|w| Thread.new { w.call } }.each(&:join)
 
-      return puts "\rNo results    " unless @kat.results[@page]
+      return puts "\rNo results    ".red unless @kat.results[@page]
 
       puts format_results
 
@@ -115,7 +116,7 @@ module Kat
       when 'q' then return false
       else
         if (1..@kat.results[@page].size).include? (answer = answer.to_i)
-          print "\nDownloading: #{@kat.results[@page][answer - 1][:title]}... "
+          print "\nDownloading".yellow + ": #{@kat.results[@page][answer - 1][:title]}... "
           puts download @kat.results[@page][answer - 1]
         end
       end
@@ -165,11 +166,11 @@ module Kat
 
     def prompt
       n = @kat.results[@page].size
-      @h.ask("1#{n > 1 ? '-' + n.to_s : ''} to download" +
-             "#{', (n)ext' if next?}" +
-             "#{', (p)rev' if prev?}" +
-             "#{", #{@show_info ? 'hide' : 'show'} (i)nfo" if hide_info?}" +
-             ', (q)uit: ') do |q|
+      @h.ask("1#{n > 1 ? '-' + n.to_s : ''}".yellow + ' to download' +
+             "#{', ' + '(n)'.yellow + 'ext' if next?}" +
+             "#{', ' + '(p)'.yellow + 'rev' if prev?}" +
+             "#{", #{@show_info ? 'hide' : 'show'} " + '(i)'.yellow + 'nfo' if hide_info?}" +
+             ', ' + '(q)'.yellow + 'uit: ') do |q|
         q.responses[:not_valid] = 'Invalid option.'
         q.validate = validation_regex
       end
@@ -177,20 +178,18 @@ module Kat
 
     def download torrent
       begin
+
         uri = URI torrent[:download]
         uri.query = nil
         response = uri.read
         file = "#{File.expand_path(@options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
         File.open(file, 'w') {|f| f.write response }
       rescue => e
-        return [ red("failed"), e.message ]
+        return [ :failed, e.message ].red
       end
-      green "done"
+      :done.green
     end
 
-    def red str; colour str, 31; end
-    def green str; colour str, 32; end
-    def colour str, code; STDOUT.tty? ? "\e[#{code}m#{str}\e[0m" : str; end
   end
 
 end

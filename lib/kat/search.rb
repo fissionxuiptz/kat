@@ -230,10 +230,8 @@ module Kat
     # if we can fetch the list of values. It'll only happen after a successful search.
     #
     def respond_to? method, include_private = false
-      if not (@results.empty? or @results.last.empty?) and
-             (@results.last.first[method] or @results.last.first[method.to_s.chop.to_sym])
-        return true
-      end
+      return true if not (@results.empty? or @results.last.empty?) and
+                         (@results.last.first[method] or @results.last.first[method.to_s.chop.to_sym])
       super
     end
 
@@ -265,10 +263,8 @@ module Kat
     # Can only happen after a successful search.
     #
     def method_missing method, *args, &block
-      if respond_to? method
-        # Don't need no fancy schmancy singularizing method. Just try chopping off the 's'.
-        return @results.compact.map {|rs| rs.map {|r| r[method] || r[method.to_s.chop.to_sym] } }.flatten
-      end
+      # Don't need no fancy schmancy singularizing method. Just try chopping off the 's'.
+      return @results.compact.map {|rs| rs.map {|r| r[method] || r[method.to_s.chop.to_sym] } }.flatten if respond_to? method
       super
     end
 
