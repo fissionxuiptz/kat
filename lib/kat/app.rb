@@ -183,11 +183,14 @@ module Kat
         file = "#{File.expand_path(@options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
         File.open(file, 'w') {|f| f.write response }
       rescue => e
-        return [ "Failed", e.message ]
+        return [ red("failed"), e.message ]
       end
-      "Success"
+      green "done"
     end
 
+    def red str; colour str, 31; end
+    def green str; colour str, 32; end
+    def colour str, code; STDOUT.tty? ? "\e[#{code}m#{str}\e[0m" : str; end
   end
 
 end
