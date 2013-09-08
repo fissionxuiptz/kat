@@ -22,6 +22,12 @@ module Kat
     attr_accessor :page
     attr_reader   :kat, :options
 
+    @@colour = false
+
+    def self.colour
+      @@colour
+    end
+
     def initialize args = ARGV
       @kat = nil
       @page = 0
@@ -44,7 +50,13 @@ module Kat
         {}
       end
 
-      @options.merge!(Kat.options @args) {|k, old_val, new_val| new_val ? new_val : old_val }
+      Kat.options(@args).tap do |o|
+        @options.merge!(o) do |k, old_val, new_val|
+          new_val or o["#{k}_given".to_sym] ? new_val : old_val
+        end
+      end
+
+      @@colour = @options[:colour]
       @options.freeze
     end
 
@@ -141,16 +153,16 @@ module Kat
 
     def format_results
       main_width = @window_width - ((!hide_info? or @show_info) ? 42 : 4)
-      buf = [ "\r%-#{main_width + 5}s#{'      Size    Age       Seeds Leeches' if !hide_info? or @show_info}" %
-        "Page #{page + 1} of #{@kat.pages}" ]
+      buf = [ "\r%-#{main_width + 5}s#{'      Size     Age      Seeds Leeches' if !hide_info? or @show_info}" %
+        "Page #{page + 1} of #{@kat.pages}" ].yellow
       buf << nil
       @kat.results[@page].each_with_index do |t, i|
         age = t[:age].split "\xC2\xA0"
         age = "%3d %-6s" % age
         # Filter out the crap that invariably infests torrent names
         title = t[:title].codepoints.map {|c| c > 31 && c < 127 ? c.chr : '?' }.join[0...main_width]
-        buf << "%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" %
-          [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]
+        ("%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" %
+          [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]).tap {|s| buf << (t[:seeds] == 0 ? s.bold_black : s) }
       end
       buf << nil
     end
@@ -166,11 +178,11 @@ module Kat
 
     def prompt
       n = @kat.results[@page].size
-      @h.ask("1#{n > 1 ? '-' + n.to_s : ''}".yellow + ' to download' +
-             "#{', ' + '(n)'.yellow + 'ext' if next?}" +
-             "#{', ' + '(p)'.yellow + 'rev' if prev?}" +
-             "#{", #{@show_info ? 'hide' : 'show'} " + '(i)'.yellow + 'nfo' if hide_info?}" +
-             ', ' + '(q)'.yellow + 'uit: ') do |q|
+      @h.ask("1#{n > 1 ? '-' + n.to_s : ''}".cyan + ' to download' +
+             "#{', ' + '(n)'.cyan + 'ext' if next?}" +
+             "#{', ' + '(p)'.cyan + 'rev' if prev?}" +
+             "#{", #{@show_info ? 'hide' : 'show'} " + '(i)'.cyan + 'nfo' if hide_info?}" +
+             ', ' + '(q)'.cyan + 'uit: ') do |q|
         q.responses[:not_valid] = 'Invalid option.'
         q.validate = validation_regex
       end
@@ -178,7 +190,6 @@ module Kat
 
     def download torrent
       begin
-
         uri = URI torrent[:download]
         uri.query = nil
         response = uri.read

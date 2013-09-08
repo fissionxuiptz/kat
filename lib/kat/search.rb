@@ -120,7 +120,7 @@ module Kat
       str = [ SEARCH_PATH, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '') ]
       str = [ RECENT_PATH ] if str[1].empty?
       str << page + 1 if page > 0
-      sorts.find {|k, v| k == @options[:sort] }.tap do |k, v|
+      sorts.find {|k, v| @options[:sort] and k == @options[:sort].to_sym }.tap do |k, v|
         str << (k ? "?field=#{v}&sorder=#{options[:asc] ? 'asc' : 'desc'}" : '')
       end
       str.join '/'

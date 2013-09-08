@@ -111,6 +111,11 @@ output:
   type:   string
   desc:   Directory to save torrents in
   short:  o
+
+colour:
+  type:   boolean
+  desc:   Output with colour
+  short:  none
 FIELD_MAP
   )].freeze
 
