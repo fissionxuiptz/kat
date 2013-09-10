@@ -1,4 +1,4 @@
-require 'kat/field_map'
+require File.dirname(__FILE__) + '/field_map'
 require 'nokogiri'
 require 'open-uri'
 
@@ -43,17 +43,17 @@ module Kat
           hash.tap do |h|
             case type
             when :select then h[k] = { :select => v[:select], :id => v[:id] || k }
-            when :sort   then h[k] = v[:sort] and h[v[:sort]] = v[:sort]
+            when :sort   then h[k] = v[:sort] and h[v[:sort]] = v[:sort]; h[v[:id]] = v[:sort] if v[:id]
             else              h[k] = v[type]
             end if v[type]
           end
         end
       end
 
-      def checks;  field_map :check;  end
-      def inputs;  field_map :input;  end
-      def selects; field_map :select; end
-      def sorts;   field_map :sort;   end
+      def checks;  field_map :check  end
+      def inputs;  field_map :input  end
+      def selects; field_map :select end
+      def sorts;   field_map :sort   end
 
       #
       # If method is a field name in SELECT_FIELDS, we can fetch the list of values.
@@ -145,7 +145,7 @@ module Kat
     # Get a copy of the search options hash
     #
     def options
-      @options.dup
+      Marshal.load(Marshal.dump(@options))
     end
 
     #
@@ -217,7 +217,7 @@ module Kat
     # Get a copy of the results
     #
     def results
-      @results.dup
+      Marshal.load(Marshal.dump(@results))
     end
 
     def checks;  Search.checks;  end

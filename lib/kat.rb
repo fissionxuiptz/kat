@@ -1,5 +1,5 @@
-require 'kat/search'
-require 'kat/version'
+require File.dirname(__FILE__) + '/kat/search'
+require File.dirname(__FILE__) + '/kat/version'
 
 module Kat
   NAME = 'Kickass Torrents Search'

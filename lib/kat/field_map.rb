@@ -6,7 +6,7 @@ module Kat
     case h
     when Hash   then Hash[h.map {|k, v| [ k.to_sym, k == 'desc' ? v : symbolize[v] ] }]
     when String then h.to_sym
-    else             h
+    else h
     end
   end)[YAML.load(<<-FIELD_MAP
 ---
@@ -26,7 +26,7 @@ without:
 
 sort:
   type:   string
-  desc:   Sort field (size, files, added, seeders, leechers)
+  desc:   Sort field (size, files, added, seeds, leeches)
 
 asc:
   desc:   Ascending sort order (descending is default)

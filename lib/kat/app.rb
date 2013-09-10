@@ -1,6 +1,7 @@
-require 'kat'
-require 'kat/options'
-require 'kat/colour'
+require File.dirname(__FILE__) + '/../kat'
+require File.dirname(__FILE__) + '/options'
+require File.dirname(__FILE__) + '/colour'
+
 require 'highline'
 require 'yaml'
 
@@ -21,12 +22,6 @@ module Kat
 
     attr_accessor :page
     attr_reader   :kat, :options
-
-    @@colour = false
-
-    def self.colour
-      @@colour
-    end
 
     def initialize args = ARGV
       @kat = nil
@@ -56,8 +51,8 @@ module Kat
         end
       end
 
-      @@colour = @options[:colour]
       @options.freeze
+      Kat::Colour.colour = @options[:colour]
     end
 
     def init_search
@@ -80,21 +75,11 @@ module Kat
 
   private
 
-    def set_window_width
-      @window_width = @h.terminal_size[0]
-    end
+    def set_window_width; @window_width = @h.terminal_size[0] end
+    def hide_info?; @window_width < 81 end
 
-    def hide_info?
-      @window_width < 81
-    end
-
-    def next?
-      @page < @kat.pages - 1
-    end
-
-    def prev?
-      @page > 0
-    end
+    def next?; @page < @kat.pages - 1 end
+    def prev?; @page > 0 end
 
     def running
       puts
@@ -161,8 +146,8 @@ module Kat
         age = "%3d %-6s" % age
         # Filter out the crap that invariably infests torrent names
         title = t[:title].codepoints.map {|c| c > 31 && c < 127 ? c.chr : '?' }.join[0...main_width]
-        ("%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" %
-          [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]).tap {|s| buf << (t[:seeds] == 0 ? s.bold_black : s) }
+        buf << ("%2d. %-#{main_width}s#{' %10s %10s %7d %7d' if !hide_info? or @show_info}" %
+          [ i + 1, title, t[:size], age, t[:seeds], t[:leeches] ]).tap {|s| s.red! if t[:seeds] == 0 }
       end
       buf << nil
     end
