@@ -71,7 +71,7 @@ module Kat
       #
       def field_options label
         begin
-          raise 'Unknown search field' unless selects.find {|k, v| k == label.to_sym }
+          raise 'Unknown search field' unless selects.find {|k, v| k == label.intern }
 
           opts = (@@doc ||= Nokogiri::HTML(open(ADVANCED_URL))).css('table.formtable td').find do |e|
             e.text[/#{label.to_s}/i]
@@ -120,7 +120,7 @@ module Kat
       str = [ SEARCH_PATH, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '') ]
       str = [ RECENT_PATH ] if str[1].empty?
       str << page + 1 if page > 0
-      sorts.find {|k, v| @options[:sort] and k == @options[:sort].to_sym }.tap do |k, v|
+      sorts.find {|k, v| @options[:sort] and k == @options[:sort].intern }.tap do |k, v|
         str << (k ? "?field=#{v}&sorder=#{options[:asc] ? 'asc' : 'desc'}" : '')
       end
       str.join '/'
@@ -231,7 +231,7 @@ module Kat
     #
     def respond_to? method, include_private = false
       return true if not (@results.empty? or @results.last.empty?) and
-                         (@results.last.first[method] or @results.last.first[method.to_s.chop.to_sym])
+                         (@results.last.first[method] or @results.last.first[method[0..-2].intern])
       super
     end
 
@@ -264,7 +264,7 @@ module Kat
     #
     def method_missing method, *args, &block
       # Don't need no fancy schmancy singularizing method. Just try chopping off the 's'.
-      return @results.compact.map {|rs| rs.map {|r| r[method] || r[method.to_s.chop.to_sym] } }.flatten if respond_to? method
+      return @results.compact.map {|rs| rs.map {|r| r[method] || r[method[0..-2].intern] } }.flatten if respond_to? method
       super
     end
 

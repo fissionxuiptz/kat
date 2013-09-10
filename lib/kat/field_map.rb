@@ -2,9 +2,9 @@ require 'yaml'
 
 module Kat
 
-  FIELD_MAP = (symbolize = lambda do |h|
+  FIELD_MAP = (symbolise = lambda do |h|
     case h
-    when Hash   then Hash[h.map {|k, v| [ k.to_sym, k == 'desc' ? v : symbolize[v] ] }]
+    when Hash   then Hash[h.map {|k, v| [ k.to_sym, k == 'desc' ? v : symbolise[v] ] }]
     when String then h.to_sym
     else h
     end

@@ -17,7 +17,6 @@ module Kat
   end
 
   class App
-    CONFIG_FILE = File.expand_path '~/.katrc'
     MIN_WIDTH = 80
 
     attr_accessor :page
@@ -36,22 +35,16 @@ module Kat
 
     def init_options args = nil
       @args = args || []
+      @options = {}
 
-      @options = if File.exist? CONFIG_FILE
-        (symbolize = lambda do |h|
-          Hash === h ? Hash[h.map {|k, v| [ k.to_sym, symbolize[v] ] }] : h
-        end)[YAML.load_file CONFIG_FILE]
-      else
-        {}
-      end
+      load_config
 
       Kat.options(@args).tap do |o|
         @options.merge!(o) do |k, old_val, new_val|
-          new_val or o["#{k}_given".to_sym] ? new_val : old_val
+          new_val or o["#{k}_given".intern] ? new_val : old_val
         end
       end
 
-      @options.freeze
       Kat::Colour.colour = @options[:colour]
     end
 
@@ -174,16 +167,23 @@ module Kat
     end
 
     def download torrent
-      begin
-        uri = URI torrent[:download]
-        uri.query = nil
-        response = uri.read
-        file = "#{File.expand_path(@options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
-        File.open(file, 'w') {|f| f.write response }
-      rescue => e
-        return [ :failed, e.message ].red
-      end
+      uri = URI torrent[:download]
+      uri.query = nil
+      response = uri.read
+      file = "#{File.expand_path(@options[:output] || '.')}/#{torrent[:title].gsub(/ /, '.').gsub(/[^a-z0-9()_.-]/i, '')}.torrent"
+      File.open(file, 'w') {|f| f.write response }
       :done.green
+    rescue => e
+      [ :failed, e.message ].red
+    end
+
+    def load_config
+      config = File.join ENV['HOME'], '.katrc'
+      @options = (symbolise = lambda do |h|
+        Hash === h ? Hash[h.map {|k, v| [ k.intern, symbolise[v] ] }] : h
+      end)[YAML.load_file config] if File.readable? config
+    rescue => e
+      $stderr.puts "Failed to load #{config}: #{e}"
     end
 
   end

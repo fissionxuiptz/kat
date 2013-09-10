@@ -9,7 +9,7 @@ module Kat
       def colour?; @@colour end
       # From AwesomePrint.colorize? by Michael Dvorkin
       # https://github.com/michaeldv/awesome_print/blob/master/lib/awesome_print/inspector.rb
-      def capable?; (STDOUT.tty? && ((ENV['TERM'] && ENV['TERM'] != 'dumb') || ENV['ANSICON'])) end
+      def capable?; STDOUT.tty? && ((ENV['TERM'] && ENV['TERM'] != 'dumb') || ENV['ANSICON']) end
     end
 
     @@colour = capable?
