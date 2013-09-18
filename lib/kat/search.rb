@@ -1,20 +1,23 @@
 require File.dirname(__FILE__) + '/field_map'
 require 'nokogiri'
-require 'open-uri'
+require 'net/http'
 
 module Kat
 
   BASE_URL     = 'http://kickass.to'
   RECENT_PATH  = 'new'
   SEARCH_PATH  = 'usearch'
-  ADVANCED_URL = "#{BASE_URL}/torrents/search/advanced/"
+  ADVANCED_URL = "#{ BASE_URL }/torrents/search/advanced/"
 
   class << self
-    def search search_term = nil, opts = {}
+    #
+    # Convenience methods for the Search class
+    #
+    def search(search_term = nil, opts = {})
       Search.new search_term, opts
     end
 
-    def quick_search search_term = nil
+    def quick_search(search_term = nil)
       Search.quick_search search_term
     end
   end
@@ -33,21 +36,23 @@ module Kat
       #
       # Kat.quick_search will do a quick search and return the results
       #
-      def quick_search search_term = nil
+      def quick_search(search_term = nil)
         new(search_term).search
       end
 
-      def field_map type = nil
+      def field_map(type = nil)
         return FIELD_MAP.dup unless type
-        FIELD_MAP.inject({}) do |hash, (k, v)|
-          hash.tap do |h|
+
+        FIELD_MAP.inject({}) { |hash, (k, v)|
+          hash.tap { |h|
             case type
-            when :select then h[k] = { :select => v[:select], :id => v[:id] || k }
-            when :sort   then h[k] = v[:sort] and h[v[:sort]] = v[:sort]; h[v[:id]] = v[:sort] if v[:id]
+            when :select then h[k] = { select: v[:select], id: v[:id] || k }
+            when :sort   then h[k] = v[:sort] and h[v[:sort]] = v[:sort]
+                              h[v[:id]] = v[:sort] if v[:id]
             else              h[k] = v[type]
             end if v[type]
-          end
-        end
+          }
+        }
       end
 
       def checks;  field_map :check  end
@@ -55,59 +60,67 @@ module Kat
       def selects; field_map :select end
       def sorts;   field_map :sort   end
 
-      #
-      # If method is a field name in SELECT_FIELDS, we can fetch the list of values.
-      #
-      def respond_to? method, include_private = false
-        selects.find {|k, v| v[:select] == method } ? true : super
-      end
-
     private
 
       #
       # Get a list of options for a particular selection field from the advanced search form
       #
-      # Raises an error unless the label is a select field
-      #
-      def field_options label
-        begin
-          raise 'Unknown search field' unless selects.find {|k, v| k == label.intern }
+      def field_options(label)
+        fail 'Unknown search field' unless selects.find { |k, v| k == label.intern }
 
-          opts = (@@doc ||= Nokogiri::HTML(open(ADVANCED_URL))).css('table.formtable td').find do |e|
-            e.text[/#{label.to_s}/i]
-          end.next_element.first_element_child.children
+        url = URI(ADVANCED_URL)
 
-          unless (group = opts.css('optgroup')).empty?
-            # Categories
-            group.inject({}) {|c, og| c[og.attributes['label'].value] = og.children.map {|o| o.attributes['value'].value }; c }
-          else
-            # Times, languages, platforms
-            opts.reject {|o| o.attributes.empty? }.inject({}) {|p, o| p[o.text] = o.attributes['value'].value; p }
-          end
-        rescue => e
-          { :error => e }
+        @@doc ||= Nokogiri::HTML(Net::HTTP.start(url.host) { |http| http.get url }.body)
+
+        opts = @@doc.css('table.formtable td').find { |e|
+          e.text[/#{ label }/i]
+        }.next_element.first_element_child.children
+
+        unless (group = opts.css('optgroup')).empty?
+          # Categories
+          group.inject({}) { |cat, og|
+            cat.tap { |c|
+              c[og.attributes['label'].value] = og.children.map { |o|
+                o.attributes['value'].value
+              }
+            }
+          }
+        else
+          # Times, languages, platforms
+          opts.reject { |o| o.attributes.empty? }.inject({}) { |p, o|
+            p.tap { |p| p[o.text] = o.attributes['value'].value }
+          }
         end
+      rescue => e
+        { error: e }
       end
 
       #
       # If method is a field name in SELECT_FIELDS, fetch the list of values.
       #
-      def method_missing method, *args, &block
-        if respond_to? method
-          return field_options selects.find {|k, v| v[:select] == method }[0]
-        end
-        super
+      def method_missing(method, *args, &block)
+        return super unless respond_to? method
+        field_options selects.find { |k, v| v[:select] == method }.first
       end
 
-    end
+      #
+      # If method is a field name in SELECT_FIELDS, we can fetch the list of values
+      #
+      def respond_to_missing?(method, include_private = false)
+        !!selects.find { |k, v| v[:select] == method } || super
+      end
+
+    end # class methods
+
     #
-    # Create a new +Kat+ object to search Kickass Torrents.
+    # Create a new +Kat::Search+ object to search Kickass Torrents.
     # The search_term can be nil, a string/symbol, or an array of strings/symbols.
     # Valid options are in STRING_FIELDS, SELECT_FIELDS or SWITCH_FIELDS.
     #
-    def initialize search_term = nil, opts = {}
+    def initialize(search_term = nil, opts = {})
       @search_term = []
       @options = {}
+      @error = nil
 
       self.query = search_term
       self.options = opts
@@ -116,13 +129,15 @@ module Kat
     #
     # Generate a query string from the stored options, supplying an optional page number
     #
-    def query_str page = 0
-      str = [ SEARCH_PATH, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '') ]
-      str = [ RECENT_PATH ] if str[1].empty?
+    def query_str(page = 0)
+      str = [SEARCH_PATH, @query.join(' ').gsub(/[^a-z0-9: _-]/i, '')]
+      str = [RECENT_PATH] if str[1].empty?
       str << page + 1 if page > 0
-      sorts.find {|k, v| @options[:sort] and k == @options[:sort].intern }.tap do |k, v|
-        str << (k ? "?field=#{v}&sorder=#{options[:asc] ? 'asc' : 'desc'}" : '')
-      end
+
+      sorts.find { |k, v| @options[:sort] && k == @options[:sort].intern }.tap { |k, v|
+        str << (k ? "?field=#{ v }&sorder=#{ options[:asc] ? 'asc' : 'desc' }" : '')
+      }
+
       str.join '/'
     end
 
@@ -131,13 +146,15 @@ module Kat
     #
     # Raises ArgumentError if search_term is not a String, Symbol or Array
     #
-    def query= search_term
+    def query=(search_term)
       @search_term = case search_term
-        when nil then []
-        when String, Symbol then [ search_term ]
-        when Array then search_term.flatten.select {|el| [ String, Symbol ].include? el.class }
-        else raise ArgumentError, "search_term must be a String, Symbol or Array. #{search_term.inspect} given."
+        when nil            then []
+        when String, Symbol then [search_term]
+        when Array          then search_term.flatten.select { |e| [String, Symbol].include? e.class }
+        else fail ArgumentError, "search_term must be a String, Symbol or Array. " <<
+                                 "#{ search_term.inspect } given."
       end
+
       build_query
     end
 
@@ -152,11 +169,14 @@ module Kat
     # Change search options with a hash, triggering a query string rebuild and
     # clearing past results.
     #
-    # Raises ArgumentError if opts is not a Hash
+    # Raises ArgumentError if options is not a Hash
     #
-    def options= opts
-      raise ArgumentError, "opts must be a Hash. #{opts.inspect} given." unless Hash === opts
-      @options.merge! opts
+    def options=(options)
+      fail ArgumentError, "options must be a Hash. " <<
+                          "#{ options.inspect } given." unless Hash === options
+
+      @options.merge! options
+
       build_query
     end
 
@@ -165,39 +185,46 @@ module Kat
     # a result set limited to the 25 results Kickass Torrents returns itself. Will
     # cache results for subsequent calls of search with the same query string.
     #
-    def search page = 0
-      unless @results[page] or (@pages > -1 and page >= @pages)
+    def search(page = 0)
+      @error = nil
+
+      search_proc = -> page {
         begin
-          doc = Nokogiri::HTML(open("#{BASE_URL}/#{URI::encode(query_str page)}"))
-          @results[page] = doc.css('td.torrentnameCell').map do |node|
-            { :path     => node.css('a.normalgrey').first.attributes['href'].value,
-              :title    => node.css('a.normalgrey').text,
-              :magnet   => node.css('a.imagnet').first.attributes['href'].value,
-              :download => node.css('a.idownload').last.attributes['href'].value,
-              :size     => (node = node.next_element).text,
-              :files    => (node = node.next_element).text.to_i,
-              :age      => (node = node.next_element).text,
-              :seeds    => (node = node.next_element).text.to_i,
-              :leeches  => (node = node.next_element).text.to_i }
-          end
+          uri = URI(URI::encode(to_s page))
+          res = Net::HTTP.start(uri.host) { |http| http.get uri }
+          @pages = 0 and return if res.code == '404'
+
+          doc = Nokogiri::HTML(res.body)
+
+          @results[page] = doc.css('td.torrentnameCell').map { |node|
+            { path:     node.css('a.normalgrey').first.attributes['href'].value,
+              title:    node.css('a.normalgrey').text,
+              magnet:   node.css('a.imagnet').first.attributes['href'].value,
+              download: node.css('a.idownload').last.attributes['href'].value,
+              size:     (node = node.next_element).text,
+              files:    (node = node.next_element).text.to_i,
+              age:      (node = node.next_element).text,
+              seeds:    (node = node.next_element).text.to_i,
+              leeches:  (node = node.next_element).text.to_i }
+          }
 
           # If we haven't previously performed a search with this query string, get the
           # number of pages from the pagination bar at the bottom of the results page.
-          @pages = doc.css('div.pages > a').last.text.to_i if @pages < 0
-
-          # If there was no pagination bar and the previous statement didn't trigger
-          # a NoMethodError, there are results but only 1 page worth.
-          @pages = 1 if @pages <= 0
-        rescue NoMethodError => e
-          # The results page had no pagination bar, but did return some results.
-          @pages = 1
-          #@error = { :error => e, :query => query_str(page) }
+          # If there's no pagination bar there's only 1 page of results.
+          if @pages == -1
+            p = doc.css('div.pages > a').last
+            @pages = p ? [1, p.text.to_i].max : 1
+          end
         rescue => e
-          # No result throws a 404 error.
-          @pages = 0 if e.class == OpenURI::HTTPError and e.message['404 Not Found']
-          @error = { :error => e, :query => query_str(page) }
-        end
-      end
+          @error = { error: e }
+        end unless @results[page] || (@pages > -1 && page >= @pages)
+      }
+
+      # Make sure we do a query for the first page of results before getting
+      # subsequent pages in order to correctly figure out the total number of
+      # pages of results.
+      search_proc.call 0 if @pages == -1
+      search_proc.call page
 
       results[page]
     end
@@ -205,7 +232,7 @@ module Kat
     #
     # For message chaining
     #
-    def go page = 0
+    def go(page = 0)
       search page
       self
     end
@@ -220,19 +247,16 @@ module Kat
       Marshal.load(Marshal.dump(@results))
     end
 
-    def checks;  Search.checks;  end
-    def inputs;  Search.inputs;  end
-    def selects; Search.selects; end
-    def sorts;   Search.sorts;   end
+    def checks;  Search.checks  end
+    def inputs;  Search.inputs  end
+    def selects; Search.selects end
+    def sorts;   Search.sorts   end
 
     #
-    # If method or its plural is a field name in the results list, this will tell us
-    # if we can fetch the list of values. It'll only happen after a successful search.
+    # Use the search url as the string representation of the object
     #
-    def respond_to? method, include_private = false
-      return true if not (@results.empty? or @results.last.empty?) and
-                         (@results.last.first[method] or @results.last.first[method[0..-2].intern])
-      super
+    def to_s(page = 0)
+      "#{ BASE_URL }/#{ query_str page }"
     end
 
   private
@@ -246,26 +270,36 @@ module Kat
       @pages   = -1
       @results = []
 
-      @query << "\"#{@options[:exact]}\"" if @options[:exact]
+      @query << "\"#{ @options[:exact] }\"" if @options[:exact]
       @query << @options[:or].join(' OR ') unless @options[:or].nil? or @options[:or].empty?
-      @query += @options[:without].map {|s| "-#{s}" } if @options[:without]
+      @query += @options[:without].map { |s| "-#{ s }" } if @options[:without]
 
-      @query += inputs.select {|k, v| @options[k] }.map {|k, v| "#{k}:#{@options[k]}" }
-      @query += checks.select {|k, v| @options[k] }.map {|k, v| "#{k}:1" }
-      @query += selects.select do |k, v|
-        (v[:id].to_s[/^.*_id$/] and @options[k].to_s.to_i > 0) or
-        (v[:id].to_s[/^[^_]+$/] and @options[k])
-      end.map {|k, v| "#{v[:id]}:#{@options[k]}" }
+      @query += inputs.select  { |k, v| @options[k] }.map { |k, v| "#{ k }:#{ @options[k] }" }
+      @query += checks.select  { |k, v| @options[k] }.map { |k, v| "#{ k }:1" }
+      @query += selects.select { |k, v|
+        (v[:id].to_s[/^.*_id$/] && @options[k].to_s.to_i > 0) ||
+        (v[:id].to_s[/^[^_]+$/] && @options[k])
+      }.map { |k, v| "#{ v[:id] }:#{ @options[k] }" }
+    end
+
+    #
+    # Fetch a list of values from the results set given by name
+    #
+    def results_column(name)
+      @results.compact.map { |rs| rs.map { |r| r[name] || r[name[0...-1].intern] } }.flatten
     end
 
     #
     # If method or its plural form is a field name in the results list, fetch the list of values.
     # Can only happen after a successful search.
     #
-    def method_missing method, *args, &block
-      # Don't need no fancy schmancy singularizing method. Just try chopping off the 's'.
-      return @results.compact.map {|rs| rs.map {|r| r[method] || r[method[0..-2].intern] } }.flatten if respond_to? method
-      super
+    def method_missing(method, *args, &block)
+      respond_to?(method) ? results_column(method) : super
+    end
+
+    def respond_to_missing?(method, include_private)
+      !(@results.empty? || @results.first.empty?) &&
+        (@results.first.first[method] || @results.first.first[method[0..-2].intern]) || super
     end
 
   end

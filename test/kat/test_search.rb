@@ -1,13 +1,13 @@
 require 'minitest/autorun'
-require 'kat/search'
+require File.dirname(__FILE__) + '/../../lib/kat/search'
 
 blue_peter = Kat.search
-blue_peter.do_search.do_search 1
+blue_peter.go.go 1
 
 describe Kat::Search do
 
   let(:kat) { Kat.search 'test' }
-  let(:kat_opts) { Kat.search 'test', { :category => 'books' } }
+  let(:kat_opts) { Kat.search 'test', { category: 'books' } }
 
   describe 'basic search' do
     it 'returns a full result set' do
@@ -23,25 +23,25 @@ describe Kat::Search do
       kat_opts.query_str(1).must_equal 'usearch/test category:books/2/'
       kat_opts.query = :foobar
       kat_opts.query_str(1).must_equal 'usearch/foobar category:books/2/'
-      kat_opts.query = [ 0, {}, [ :test, 0..1, [ 'user:foo' ] ] ]
+      kat_opts.query = [0, {}, [:test, 0..1, ['user:foo']]]
       kat_opts.query_str(1).must_equal 'usearch/test user:foo category:books/2/'
     end
 
     it 'returns a valid query string based on many options' do
-      kat_opts.options = { :files => 2, :safe => true, :language => 2, :sort => :files_count, :asc => true, :seeds => 2 }
+      kat_opts.options = { files: 2, safe: true, language: 2, sort: :files_count, asc: true, seeds: 2 }
       kat_opts.query_str(1).must_equal 'usearch/test files:2 seeds:2 safe:1 category:books lang_id:2/2/?field=files_count&sorder=asc'
     end
 
     it 'wont respond to result fields before a search' do
-      [ :titles, :files ].each do |s|
+      %i(titles files).each { |s|
         kat.respond_to?(s).must_equal false
-      end
+      }
     end
 
     it 'responds to result fields after a search' do
-      [ :titles, :files ].each do |s|
+      %i(titles files).each { |s|
         blue_peter.respond_to?(s).must_equal true
-      end
+      }
     end
 
     it 'returns identical result sets' do
@@ -55,8 +55,8 @@ describe Kat::Search do
 
     it 'returns a valid query string with options' do
       bp = blue_peter.dup
-      bp.options = { :user => :foobar }
-      bp.options.must_equal({ :user => :foobar })
+      bp.options = { user: :foobar }
+      bp.options.must_equal({ user: :foobar })
       bp.query_str(1).must_equal 'usearch/user:foobar/2/'
       bp.results.must_be_empty
       bp.pages.must_equal(-1)
@@ -71,7 +71,7 @@ describe Kat::Search do
     end
 
     it 'works when there are fewer than 25 results' do
-      kat.options = { :category => :wallpapers }
+      kat.options = { category: :wallpapers }
       kat.search.wont_be_nil
       kat.search.size.wont_equal 0
       kat.pages.must_equal 1
@@ -80,8 +80,6 @@ describe Kat::Search do
     it 'can return 0 results, set an error and set pages to 0' do
       kat.query = 'owijefbvoweivf'
       kat.search.must_be_nil
-      kat.error[:error].must_be_instance_of OpenURI::HTTPError
-      kat.error[:error].message.must_equal '404 Not Found'
       kat.pages.must_equal 0
     end
   end

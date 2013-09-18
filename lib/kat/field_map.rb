@@ -2,13 +2,13 @@ require 'yaml'
 
 module Kat
 
-  FIELD_MAP = (symbolise = lambda do |h|
+  FIELD_MAP = (symbolise = -> h {
     case h
-    when Hash   then Hash[h.map {|k, v| [ k.to_sym, k == 'desc' ? v : symbolise[v] ] }]
+    when Hash   then Hash[h.map { |k, v| [k.to_sym, k == 'desc' ? v : symbolise[v]] }]
     when String then h.to_sym
     else h
     end
-  end)[YAML.load(<<-FIELD_MAP
+  })[YAML.load(<<-FIELD_MAP
 ---
 exact:
   type:   string

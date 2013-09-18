@@ -8,37 +8,50 @@ module Kat
     #
     # Convenience method for the Options class
     #
-    def options args = []
-      Options.new(args).parse
+    def options(args)
+      Options.parse args
     end
   end
 
   class Options
 
     class << self
+      #
+      # Pick out the invocation options from the field map
+      #
       def options_map
-        FIELD_MAP.inject({}) do |hash, (k, v)|
-          hash.tap {|h| h[k] = v.select {|f| %i(desc type multi select short).include? f } if v[:desc] }
-        end
+        fields = %i(desc type multi select short)
+
+        FIELD_MAP.inject({}) { |hash, (k, v)|
+          hash.tap { |h| h[k] = v.select { |f| fields.include? f } if v[:desc] }
+        }
       end
-    end
 
-    def initialize args = nil
-      @args = args || []
-    end
+      def parse(args)
+        Trollop::options(args) {
+          version VERSION_STR
+          banner <<-USAGE.gsub /^\s+\|/, ''
+            |#{ VERSION_STR }
+            |
+            |Usage: #{ File.basename __FILE__ } [options] <query>+
+            |
+            |  Options:
+          USAGE
 
-    def parse args = nil
-      Trollop::options(args || @args) do
-        version VERSION_STR
-        banner <<-USAGE
-#{VERSION_STR}
+          Options.options_map.each { |k, v|
+            opt k,
+                v[:desc],
+                { type:  v[:type] || :boolean,
+                  multi: v[:multi],
+                  short: v[:short] }
+          }
 
-Usage: #{File.basename __FILE__} [options] <query>+
-
-  Options:
-USAGE
-        Options.options_map.each {|k, v| opt k, v[:desc], { :type => v[:type] || :boolean, :multi => v[:multi], :short => v[:short] } }
-        Options.options_map.each {|k, v| opt v[:select], "List the #{v[:select]} that may be used with --#{k}", :short => :none if v[:select] }
+          Options.options_map.each { |k, v|
+            opt v[:select],
+                "List the #{ v[:select] } that may be used with --#{ k }",
+                short: :none if v[:select]
+          }
+        }
       end
     end
 
