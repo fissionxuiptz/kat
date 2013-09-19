@@ -1,6 +1,8 @@
 require 'minitest/autorun'
 require File.dirname(__FILE__) + '/../../lib/kat/colour'
 
+Kat::Colour.colour = true
+
 describe Kat::Colour do
   let(:colours) { %i(black red green yellow blue magenta cyan white) }
 
