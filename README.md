@@ -22,11 +22,11 @@ Or install it yourself as:
 
 ### Quick search
 
-    Kat.search('game of thrones')
+    Kat.quick_search('game of thrones')
 
 ### Search for torrents
 
-    kat = Kat.new('game of thrones', { :category => 'tv' })
+    kat = Kat.search('game of thrones', { :category => 'tv' })
     kat.search
 
 ### Specifying pages
