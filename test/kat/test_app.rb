@@ -44,8 +44,8 @@ describe Kat::App do
         next?.wont_equal true
         validation_regex.must_equal(
           /^([pq]|[1-#{ [9, n].min }]#{
-            "|1[0-#{ [9, n - 10].min }]" if n > 9
-            }#{ "|2[0-#{ n - 20 }]" if n > 19 })$/
+          "|1[0-#{ [9, n - 10].min }]" if n > 9
+          }#{ "|2[0-#{ n - 20 }]" if n > 19 })$/
         )
 
         @page = 0

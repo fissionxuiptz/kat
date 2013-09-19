@@ -144,28 +144,26 @@ module Kat
         }
       ].map { |w| Thread.new { w.call } }.each(&:join)
 
-      unless @kat.results[@page] && !@kat.error
-        puts "\rNo results    ".red
-        puts @kat.error[:error] if @kat.error
-        return false
-      end
+      puts (res = format_results)
 
-      puts format_results
-
-      case (answer = prompt)
-      when 'i' then @show_info = !@show_info
-      when 'n' then @page += 1 if next?
-      when 'p' then @page -= 1 if prev?
-      when 'q' then return false
-      else
-        if (1..@kat.results[@page].size).include? (answer = answer.to_i)
-          print "\nDownloading".yellow <<
-                ": #{ @kat.results[@page][answer - 1][:title] }... "
-          puts download @kat.results[@page][answer - 1]
+      if res.size > 1
+        case (answer = prompt)
+        when 'i' then @show_info = !@show_info
+        when 'n' then @page += 1 if next?
+        when 'p' then @page -= 1 if prev?
+        when 'q' then return false
+        else
+          if (1..@kat.results[@page].size).include? (answer = answer.to_i)
+            print "\nDownloading".yellow <<
+                  ": #{ @kat.results[@page][answer - 1][:title] }... "
+            puts download @kat.results[@page][answer - 1]
+          end
         end
-      end
 
-      true
+        true
+      else
+        false
+      end
     end
 
     #
@@ -194,6 +192,12 @@ module Kat
     #
     def format_results
       main_width = @window_width - (!hide_info? || @show_info ? 42 : 4)
+
+      if @kat.error
+        return ["\rConnection failed".red]
+      elsif !@kat.results[@page]
+        return ["\rNo results    ".red]
+      end
 
       buf = ["\r%-#{ main_width + 5 }s#{ '      Size     Age      Seeds Leeches' if !hide_info? || @show_info }" %
         "Page #{ page + 1 } of #{ @kat.pages }", nil].yellow!
