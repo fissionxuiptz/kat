@@ -1,8 +1,6 @@
 require 'minitest/autorun'
 require File.dirname(__FILE__) + '/../../lib/kat/colour'
 
-Kat::Colour.colour = true
-
 describe Kat::Colour do
   let(:colours) { %i(black red green yellow blue magenta cyan white) }
 
@@ -25,6 +23,8 @@ describe Kat::Colour do
     end
 
     it 'colours strings' do
+      Kat::Colour.colour = true
+
       colours.each_with_index { |c, i|
         str = 'foobar'
         result = "\e[0;#{ 30 + i }mfoobar\e[0m"
@@ -57,6 +57,8 @@ describe Kat::Colour do
     end
 
     it 'colours symbols' do
+      Kat::Colour.colour = true
+
       colours.each_with_index { |c, i|
         sym = :foobar
         result = "\e[0;#{ 30 + i }mfoobar\e[0m"
@@ -87,6 +89,8 @@ describe Kat::Colour do
     end
 
     it 'colours arrays of strings and symbols' do
+      Kat::Colour.colour = true
+
       colours.each_with_index { |c, i|
         s = ['foobar', :foobar, nil, ['foobar', :foobar, nil]]
         t = ['foobar', :foobar, nil, ['foobar', :foobar, nil]]

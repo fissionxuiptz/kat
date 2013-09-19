@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require File.dirname(__FILE__) + '/../../lib/kat/app'
 
-app = Kat::App.new %w(predator -c movies -o .)
+app = Kat::App.new %w(aliens -c movies -o .)
 app.kat.go(1).go(app.kat.pages - 1)
 
 describe Kat::App do
@@ -14,7 +14,7 @@ describe Kat::App do
     end
 
     it 're-initialises options' do
-      k = Kat::App.new %w(predator)
+      k = Kat::App.new %w(aliens)
       k.init_options %w(bible -c books)
       k.options.must_be_instance_of Hash
       k.options[:category].must_equal 'books'
