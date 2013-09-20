@@ -93,9 +93,11 @@ describe Kat::App do
         list.must_be_instance_of Array
         list.wont_be_empty
 
-        list.size.must_equal kat.results[0].size + 3
-        2.upto(list.size - 2) { |i|
-          list[i].must_match /^(\s[1-9]|[12][0-9])\. .*/
+        list[1].must_be_nil
+        list.last.must_be_nil
+
+        (list.size - 3).times { |i|
+          list[i + 2].must_match /^(\s[1-9]|[12][0-9])\. .*/
         }
       }
     end
