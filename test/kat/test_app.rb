@@ -42,11 +42,13 @@ describe Kat::App do
 
         prev?.must_equal true
         next?.wont_equal true
+        # Skip the test if there's no results. We really only want to test in ideal
+        # network conditions and no results here are an indication that's not the case
         validation_regex.must_equal(
           /^([pq]|[1-#{ [9, n].min }]#{
           "|1[0-#{ [9, n - 10].min }]" if n > 9
           }#{ "|2[0-#{ n - 20 }]" if n > 19 })$/
-        )
+        ) if n > 0
 
         @page = 0
       }
@@ -83,6 +85,7 @@ describe Kat::App do
 
     it 'formats a list of torrents' do
       Kat::Colour.colour = false
+
       app.instance_exec {
         set_window_width
         list = format_results
@@ -99,6 +102,7 @@ describe Kat::App do
 
     it 'downloads data from a URL' do
       Kat::Colour.colour = false
+
       app.instance_exec {
         s = 'foobar'
         result = download({ download: 'http://google.com', title: s })
@@ -110,6 +114,7 @@ describe Kat::App do
 
     it 'returns an error message when a download fails' do
       Kat::Colour.colour = false
+
       app.instance_exec {
         result = download({ download: 'http://foo.bar', title: 'foobar' })
         result.must_be_instance_of Array
