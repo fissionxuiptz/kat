@@ -1,122 +1,33 @@
-require 'yaml'
-
 module Kat
 
-  FIELD_MAP = (symbolise = -> h {
-    case h
-    when Hash   then Hash[h.map { |k, v| [k.to_sym, k == 'desc' ? v : symbolise[v]] }]
-    when String then h.to_sym
-    else h
-    end
-  })[YAML.load(<<-FIELD_MAP
----
-exact:
-  type:   string
-  desc:   Exact phrase
+  FIELD_MAP = {
+    exact:    { type: :string, desc: 'Exact phrase' },
+    or:       { type: :string, desc: 'Optional words',    multi: true },
+    without:  { type: :string, desc: 'Without this word', multi: true },
 
-or:
-  type:   string
-  desc:   Optional words
-  multi:  true
+    sort:     { type: :string, desc: 'Sort field (size, files, added, seeds, leeches)' },
+    asc:      {                desc: 'Ascending sort order (descending is default)' },
 
-without:
-  type:   string
-  desc:   Without this word
-  multi:  true
+    category: { type: :string, desc: 'Category',           select: :categories, short: :c },
+    added:    { type: :string, desc: 'Age of the torrent', select: :times,      short: :a, sort: :time_add, id: :age },
+    size:     { sort: :size },
 
-sort:
-  type:   string
-  desc:   Sort field (size, files, added, seeds, leeches)
+    user:     { type: :string, desc: 'Uploader',           input: true },
+    files:    { type: :int,    desc: 'Number of files',    input: true, sort: :files_count },
+    imdb:     { type: :int,    desc: 'IMDB ID',            input: true },
+    seeds:    { type: :int,    desc: 'Min no of seeders',  input: true, sort: :seeders, short: :s },
+    leeches:  { sort: :leechers },
+    season:   { type: :int,    desc: 'Television season',  input: true },
+    episode:  { type: :int,    desc: 'Television episode', input: true, short: :e },
 
-asc:
-  desc:   Ascending sort order (descending is default)
+    language: { type: :int,    desc: 'Language',      select: :languages, id: :lang_id },
+    platform: { type: :int,    desc: 'Game platform', select: :platforms, id: :platform_id },
 
-category:
-  select: categories
-  type:   string
-  desc:   Category
-  short:  c
+    safe:     {                desc: 'Family safe filter', check: true, short: :none},
+    verified: {                desc: 'Verified torrent',   check: true, short: :none },
 
-added:
-  select: times
-  sort:   time_add
-  type:   string
-  desc:   Age of the torrent
-  id:     age
-  short:  a
-
-size:
-  sort:   size
-
-user:
-  input:  true
-  type:   string
-  desc:   Uploader
-
-files:
-  input:  true
-  sort:   files_count
-  type:   int
-  desc:   Number of files
-
-imdb:
-  input:  true
-  type:   int
-  desc:   IMDB ID
-
-seeds:
-  input:  true
-  sort:   seeders
-  type:   int
-  desc:   Min no of seeders
-  short:  s
-
-leeches:
-  sort:   leechers
-
-season:
-  input:  true
-  type:   int
-  desc:   Television season
-
-episode:
-  input:  true
-  type:   int
-  desc:   Television episode
-  short:  e
-
-language:
-  select: languages
-  type:   int
-  desc:   Language
-  id:     lang_id
-
-platform:
-  select: platforms
-  type:   int
-  desc:   Game platform
-  id:     platform_id
-
-safe:
-  check:  true
-  desc:   Family safe filter
-  short:  none
-
-verified:
-  check:  true
-  desc:   Verified torrent
-  short:  none
-
-output:
-  type:   string
-  desc:   Directory to save torrents in
-  short:  o
-
-colour:
-  type:   boolean
-  desc:   Output with colour
-  short:  none
-FIELD_MAP
-  )].freeze
+    output:   { type: :string, desc: 'Directory to save torrents in', short: :o },
+    colour:   {                desc: 'Output with colour',            short: :none }
+  }.freeze
 
 end

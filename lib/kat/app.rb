@@ -18,6 +18,7 @@ module Kat
 
   class App
     MIN_WIDTH = 80
+    CONFIG = File.join ENV['HOME'], '.katrc'
 
     # The current page number (0-based)
     attr_accessor :page
@@ -46,14 +47,13 @@ module Kat
     # Initialise the app's options
     #
     def init_options(args = nil)
-      @options = {}
       @args = case args
       when nil    then []
       when String then args.split
       else             args
       end
 
-      load_config
+      @options = load_config || {}
 
       Kat.options(@args).tap { |o|
         @options.merge!(o) { |k, ov, nv| o["#{ k }_given".intern] ? nv : ov }
@@ -246,7 +246,7 @@ module Kat
     # Download the torrent to either the output directory or the working directory
     #
     def download(torrent)
-      uri = URI(URI::encode torrent[:download])
+      uri = URI(URI.encode torrent[:download])
       uri.query = nil
       file = "#{ @options[:output] || '.' }/" <<
              "#{ torrent[:title].tr(' ', ?.).gsub(/[^a-z0-9()_.-]/i, '') }.torrent"
@@ -263,16 +263,14 @@ module Kat
     end
 
     #
-    # Load options from ~/.katrc if it exists
+    # Load options from CONFIG if it exists
     #
     def load_config
-      config = File.join(ENV['HOME'], '.katrc')
-
-      @options = (symbolise = -> h {
+      (symbolise = -> h {
         Hash === h ? Hash[h.map { |k, v| [k.intern, symbolise[v]] }] : h
-      })[YAML.load_file config] if File.readable? config
+      })[YAML.load_file CONFIG] if File.readable? CONFIG
     rescue => e
-      warn "Failed to load #{config}: #{e}"
+      warn "Failed to load #{ CONFIG }: #{ e }"
     end
 
   end

@@ -96,8 +96,8 @@ describe Kat::App do
         list[1].must_be_nil
         list.last.must_be_nil
 
-        (list.size - 3).times { |i|
-          list[i + 2].must_match /^(\s[1-9]|[12][0-9])\. .*/
+        (2..list.size - 2).each { |i|
+          list[i].must_match /^(\s[1-9]|[12][0-9])\. .*/
         }
       }
     end
