@@ -60,6 +60,9 @@ module Kat
       }
 
       Kat::Colour.colour = @options[:colour]
+    rescue NoMethodError => e
+      @options = {}
+      warn "Wrong config file format: #{ e }"
     end
 
     #
@@ -246,6 +249,8 @@ module Kat
     # Download the torrent to either the output directory or the working directory
     #
     def download(torrent)
+      return [:failed, 'no download link available'].red unless torrent[:download]
+
       uri = URI(URI.encode torrent[:download])
       uri.query = nil
       file = "#{ @options[:output] || '.' }/" <<

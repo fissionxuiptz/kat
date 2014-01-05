@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/field_map'
 require 'nokogiri'
 require 'net/http'
+require 'andand'
 
 module Kat
 
@@ -197,10 +198,10 @@ module Kat
           doc = Nokogiri::HTML(res.body)
 
           @results[page] = doc.css('td.torrentnameCell').map { |node|
-            { path:     node.css('a.normalgrey').first.attributes['href'].value,
+            { path:     node.css('a.normalgrey').first.andand.attr('href'),
               title:    node.css('a.normalgrey').text,
-              magnet:   node.css('a.imagnet').first.attributes['href'].value,
-              download: node.css('a.idownload').last.attributes['href'].value,
+              magnet:   node.css('a.imagnet').first.andand.attr('href'),
+              download: node.css('a.idownload').last.andand.attr('href'),
               size:     (node = node.next_element).text,
               files:    (node = node.next_element).text.to_i,
               age:      (node = node.next_element).text,
