@@ -195,6 +195,7 @@ module Kat
     #
     def format_results
       main_width = @window_width - (!hide_info? || @show_info ? 42 : 4)
+      buf = []
 
       if @kat.error
         return ["\rConnection failed".red]
@@ -202,8 +203,10 @@ module Kat
         return ["\rNo results    ".red]
       end
 
-      buf = ["\r%-#{ main_width + 5 }s#{ '      Size     Age      Seeds Leeches' if !hide_info? || @show_info }" %
-        "Page #{ page + 1 } of #{ @kat.pages }", nil].yellow!
+      buf << "\r#{ @kat.message[:message] }\n".red if @kat.message
+
+      buf << ("\r%-#{ main_width + 5 }s#{ '      Size     Age      Seeds Leeches' if !hide_info? || @show_info }" %
+        ["Page #{ page + 1 } of #{ @kat.pages }", nil]).yellow
 
       @kat.results[@page].each_with_index { |t, i|
         age = t[:age].split "\xC2\xA0"
@@ -243,6 +246,14 @@ module Kat
         q.responses[:not_valid] = 'Invalid option.'
         q.validate = validation_regex
       }
+    rescue RegexpError => e
+      puts if @kat.pages > 0
+        "Error reading the page\n"
+      else
+        "Could not connect to the site\n"
+      end.red
+
+      return 'q'
     end
 
     #
