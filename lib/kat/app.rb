@@ -247,11 +247,7 @@ module Kat
         q.validate = validation_regex
       }
     rescue RegexpError => e
-      puts if @kat.pages > 0
-        "Error reading the page\n"
-      else
-        "Could not connect to the site\n"
-      end.red
+      puts (@kat.pages > 0 ? "Error reading the page\n" : "Could not connect to the site\n").red
 
       return 'q'
     end
