@@ -93,7 +93,6 @@ describe Kat::App do
         list.must_be_instance_of Array
         list.wont_be_empty
 
-        list[1].must_be_nil
         list.last.must_be_nil
 
         (2..list.size - 2).each { |i|
