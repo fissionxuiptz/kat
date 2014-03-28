@@ -211,9 +211,9 @@ module Kat
 
           doc = Nokogiri::HTML(res.body)
 
-          @results[page] = doc.css('td.torrentnameCell').map { |node|
-            { path:     node.css('a.normalgrey').first.andand.attr('href'),
-              title:    node.css('a.normalgrey').text,
+          @results[page] = doc.xpath('//table[@class="data"]/tr[position()>1]/td[1]').map { |node|
+            { path:     node.css('a.torType').first.andand.attr('href'),
+              title:    node.css('a.cellMainLink').text,
               magnet:   node.css('a.imagnet').first.andand.attr('href'),
               download: node.css('a.idownload').last.andand.attr('href'),
               size:     (node = node.next_element).text,
