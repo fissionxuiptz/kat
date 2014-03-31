@@ -1,3 +1,4 @@
+require File.dirname(__FILE__) + '/version'
 require File.dirname(__FILE__) + '/field_map'
 require 'nokogiri'
 require 'net/http'
@@ -152,7 +153,7 @@ module Kat
     #
     def query=(search_term)
       @search_term = case search_term
-        when nil            then []
+        when nil, ''        then []
         when String, Symbol then [search_term]
         when Array          then search_term.flatten.select { |e| [String, Symbol].include? e.class }
         else fail ArgumentError, "search_term must be a String, Symbol or Array. " <<
