@@ -1,5 +1,4 @@
 module Kat
-
   FIELD_MAP = {
     exact:    { type: :string, desc: 'Exact phrase' },
     or:       { type: :string, desc: 'Optional words',    multi: true },
@@ -29,5 +28,4 @@ module Kat
     output:   { type: :string, desc: 'Directory to save torrents in', short: :o },
     colour:   {                desc: 'Output with colour',            short: :none }
   }.freeze
-
 end

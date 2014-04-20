@@ -7,7 +7,7 @@ blue_peter.go.go 1
 describe Kat::Search do
 
   let(:kat) { Kat.search 'test' }
-  let(:kat_opts) { Kat.search 'test', { category: 'books' } }
+  let(:kat_opts) { Kat.search 'test', category: 'books' }
 
   describe 'basic search' do
     it 'returns a full result set' do
@@ -33,15 +33,15 @@ describe Kat::Search do
     end
 
     it 'wont respond to result fields before a search' do
-      %i(titles files).each { |s|
+      %i(titles files).each do |s|
         kat.respond_to?(s).must_equal false
-      }
+      end
     end
 
     it 'responds to result fields after a search' do
-      %i(titles files).each { |s|
+      %i(titles files).each do |s|
         blue_peter.respond_to?(s).must_equal true
-      }
+      end
     end
 
     it 'returns identical result sets' do
@@ -56,7 +56,7 @@ describe Kat::Search do
     it 'returns a valid query string with options' do
       bp = blue_peter.dup
       bp.options = { user: :foobar }
-      bp.options.must_equal({ user: :foobar })
+      bp.options.must_equal(user: :foobar)
       bp.query_str(1).must_equal 'usearch/user:foobar/2/'
       bp.results.must_be_empty
       bp.pages.must_equal(-1)

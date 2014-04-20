@@ -14,18 +14,18 @@ describe Kat::Colour do
     end
 
     it 'has colour methods' do
-      colours.each { |c|
+      colours.each do |c|
         ''.respond_to?(c).must_equal true
         :s.respond_to?(c).must_equal true
         [].respond_to?(c).must_equal true
         {}.respond_to?(c).wont_equal true
-      }
+      end
     end
 
     it 'colours strings' do
       Kat::Colour.colour = true
 
-      colours.each_with_index { |c, i|
+      colours.each_with_index do |c, i|
         str = 'foobar'
         result = "\e[0;#{ 30 + i }mfoobar\e[0m"
         intense_result = "\e[1;#{ 30 + i }mfoobar\e[0m"
@@ -42,7 +42,7 @@ describe Kat::Colour do
         str = 'foobar'
         str.send("#{ c }!", true).must_equal intense_result
         str.must_equal intense_result
-      }
+      end
     end
 
     it 'uncolour strings' do
@@ -59,7 +59,7 @@ describe Kat::Colour do
     it 'colours symbols' do
       Kat::Colour.colour = true
 
-      colours.each_with_index { |c, i|
+      colours.each_with_index do |c, i|
         sym = :foobar
         result = "\e[0;#{ 30 + i }mfoobar\e[0m"
         intense_result = "\e[1;#{ 30 + i }mfoobar\e[0m"
@@ -75,7 +75,7 @@ describe Kat::Colour do
 
         sym.send("#{ c }!", true).must_equal :foobar
         sym.must_equal :foobar
-      }
+      end
     end
 
     it 'does not uncolour symbols' do
@@ -91,7 +91,7 @@ describe Kat::Colour do
     it 'colours arrays of strings and symbols' do
       Kat::Colour.colour = true
 
-      colours.each_with_index { |c, i|
+      colours.each_with_index do |c, i|
         s = ['foobar', :foobar, nil, ['foobar', :foobar, nil]]
         t = ['foobar', :foobar, nil, ['foobar', :foobar, nil]]
         result = [
@@ -110,7 +110,7 @@ describe Kat::Colour do
         result[3][1] = :foobar
         s.send("#{ c }!").must_equal result
         s.must_equal result
-      }
+      end
     end
 
     it 'uncolours arrays of strings' do

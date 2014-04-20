@@ -15,9 +15,9 @@ Gem::Specification.new do |s|
   s.summary       = 'Kickass Torrents Interface'
   s.description   = 'A Ruby interface to Kickass Torrents'
 
-  s.files         = `git ls-files`.split $/
-  s.executables   = s.files.grep(%r{^bin/}) { |f| File.basename f }
-  s.test_files    = s.files.grep(%r{^(test|spec|features)/})
+  s.files         = `git ls-files`.split "\n"
+  s.executables   = s.files.grep(/^bin\//) { |f| File.basename f }
+  s.test_files    = s.files.grep(/^(test|spec|features)\//)
   s.require_paths = ['lib']
 
   s.add_runtime_dependency 'nokogiri', '~> 1.6'

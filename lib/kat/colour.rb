@@ -1,23 +1,19 @@
 module Kat
-
   module Colour
-
     COLOURS = %w(black red green yellow blue magenta cyan white)
 
-    class << self
-      # From AwesomePrint.colorize? by Michael Dvorkin
-      # https://github.com/michaeldv/awesome_print/blob/master/lib/awesome_print/inspector.rb
-      def capable?
-        STDOUT.tty? && (ENV['TERM'] && ENV['TERM'] != 'dumb' || ENV['ANSICON'])
-      end
+    # From AwesomePrint.colorize? by Michael Dvorkin
+    # https://github.com/michaeldv/awesome_print/blob/master/lib/awesome_print/inspector.rb
+    def self.capable?
+      STDOUT.tty? && (ENV['TERM'] && ENV['TERM'] != 'dumb' || ENV['ANSICON'])
+    end
 
-      def colour=(f)
-        @@colour = f && capable?
-      end
+    def self.colour=(f)
+      @@colour = f && capable?
+    end
 
-      def colour?
-        @@colour
-      end
+    def self.colour?
+      @@colour
     end
 
     @@colour = capable?
@@ -26,14 +22,14 @@ module Kat
       @@colour
     end
 
-    COLOURS.each { |c|
+    COLOURS.each do |c|
       define_method(c) { |*args| colour c, args[0] }
       define_method("#{ c }!") { |*args| colour! c, args[0] }
-    }
+    end
 
     def uncolour
       case self
-      when String then gsub /\e\[[0-9;]+?m(.*?)\e\[0m/, '\\1'
+      when String then gsub(/\e\[[0-9;]+?m(.*?)\e\[0m/, '\\1')
       when Array  then map { |e| e.uncolour if e }
       else self
       end
@@ -48,12 +44,15 @@ module Kat
       self
     end
 
-  private
+    private
 
     def colour(name, intense = false)
       return case self
-             when String, Symbol then "\e[#{ intense ? 1 : 0 };#{ 30 + COLOURS.index(name) }m#{ self }\e[0m"
-             when Array          then map { |e| e.send name.to_s, intense if e }
+             when String, Symbol
+               "\e[#{ intense ? 1 : 0 };" \
+               "#{ 30 + COLOURS.index(name) }m#{ self }\e[0m"
+             when Array
+               map { |e| e.send name.to_s, intense if e }
              end if colour?
 
       self
@@ -62,14 +61,12 @@ module Kat
     def colour!(name, intense = false)
       case self
       when String then replace send(name.to_s, intense)
-      when Array  then each { |e| e.send "#{ name.to_s }!", intense if e }
+      when Array  then each { |e| e.send "#{ name }!", intense if e }
       end if colour?
 
       self
     end
-
   end
-
 end
 
 class String; include Kat::Colour end

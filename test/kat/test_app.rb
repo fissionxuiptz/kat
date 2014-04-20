@@ -23,7 +23,7 @@ describe Kat::App do
 
     it 'creates a validation regex' do
       app.page.must_equal 0
-      app.instance_exec {
+      app.instance_exec do
         @window_width = 80
 
         prev?.wont_equal true
@@ -42,8 +42,9 @@ describe Kat::App do
 
         prev?.must_equal true
         next?.wont_equal true
-        # Skip the test if there's no results. We really only want to test in ideal
-        # network conditions and no results here are an indication that's not the case
+        # Skip the test if there's no results. We really only want to test in
+        # ideal network conditions and no results here are an indication that's
+        # not the case
         validation_regex.must_equal(
           /^([pq]|[1-#{ [9, n].min }]#{
           "|1[0-#{ [9, n - 10].min }]" if n > 9
@@ -51,19 +52,19 @@ describe Kat::App do
         ) if n > 0
 
         @page = 0
-      }
+      end
     end
 
     it 'deals with terminal width' do
-      app.instance_exec {
+      app.instance_exec do
         set_window_width
-        hide_info?.must_equal (@window_width < 81)
-      }
+        hide_info?.must_equal(@window_width < 81)
+      end
     end
 
     it 'formats a list of options' do
-      app.instance_exec {
-        %i(category added platform language).each { |s|
+      app.instance_exec do
+        %i(category added platform language).each do |s|
           list = format_lists(s => Kat::Search.selects[s])
 
           list.must_be_instance_of Array
@@ -71,22 +72,28 @@ describe Kat::App do
 
           [0, 2, list.size - 1].each { |i| list[i].must_be_nil }
 
-          list[1].must_equal case s
-          when :added    then 'Times'
-          when :category then 'Categories'
-          else                s.to_s.capitalize << 's'
-          end
+          str = case s
+                when :added    then 'Times'
+                when :category then 'Categories'
+                else                s.to_s.capitalize << 's'
+                end
+          list[1].must_equal str
 
-          3.upto(list.size - 2) { |i| list[i].must_be_instance_of String } unless s == :category
-          3.upto(list.size - 2) { |i| list[i].must_match(/^\s*([A-Z]+ => )?[a-z0-9-]+/) if list[i] } if s == :category
-        }
-      }
+          3.upto(list.size - 2) do |i|
+            list[i].must_be_instance_of String
+          end unless s == :category
+
+          3.upto(list.size - 2) do |i|
+            list[i].must_match(/^\s*([A-Z]+ => )?[a-z0-9-]+/) if list[i]
+          end if s == :category
+        end
+      end
     end
 
     it 'formats a list of torrents' do
       Kat::Colour.colour = false
 
-      app.instance_exec {
+      app.instance_exec do
         set_window_width
         list = format_results
 
@@ -95,33 +102,33 @@ describe Kat::App do
 
         list.last.must_be_nil
 
-        (2..list.size - 2).each { |i|
-          list[i].must_match /^(\s[1-9]|[12][0-9])\. .*/
-        }
-      }
+        (2..list.size - 2).each do |i|
+          list[i].must_match(/^(\s[1-9]|[12][0-9])\. .*/)
+        end
+      end
     end
 
     it 'downloads data from a URL' do
       Kat::Colour.colour = false
 
-      app.instance_exec {
+      app.instance_exec do
         s = 'foobar'
-        result = download({ download: 'http://google.com', title: s })
+        result = download(download: 'http://google.com', title: s)
         result.must_equal :done
-        File.exists?(File.expand_path "./#{ s }.torrent").must_equal true
+        File.exist?(File.expand_path "./#{ s }.torrent").must_equal true
         File.delete(File.expand_path "./#{ s }.torrent")
-      }
+      end
     end
 
     it 'returns an error message when a download fails' do
       Kat::Colour.colour = false
 
-      app.instance_exec {
-        result = download({ download: 'http://foo.bar', title: 'foobar' })
+      app.instance_exec do
+        result = download(download: 'http://foo.bar', title: 'foobar')
         result.must_be_instance_of Array
         result.first.must_equal :failed
-        result.last.must_match /^getaddrinfo/
-      }
+        result.last.must_match(/^getaddrinfo/)
+      end
     end
   end
 end
