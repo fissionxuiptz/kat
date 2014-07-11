@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/field_map'
-require File.dirname(__FILE__) + '/version'
+require_relative 'field_map'
+require_relative 'version'
 require 'trollop'
 
 module Kat

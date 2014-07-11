@@ -1,6 +1,6 @@
-require File.dirname(__FILE__) + '/../kat'
-require File.dirname(__FILE__) + '/options'
-require File.dirname(__FILE__) + '/colour'
+require_relative '../kat'
+require_relative 'options'
+require_relative 'colour'
 
 require 'highline'
 require 'yaml'

@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require File.dirname(__FILE__) + '/../../lib/kat/app'
+require_relative '../../lib/kat/app'
 
 app = Kat::App.new %w(aliens -c movies -o .)
 app.kat.go(1).go(app.kat.pages - 1)

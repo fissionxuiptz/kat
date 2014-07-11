@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require File.dirname(__FILE__) + '/../../lib/kat/options'
+require_relative '../../lib/kat/options'
 
 describe Kat::Options do
 

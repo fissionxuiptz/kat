@@ -1,5 +1,5 @@
-require File.dirname(__FILE__) + '/version'
-require File.dirname(__FILE__) + '/field_map'
+require_relative 'version'
+require_relative 'field_map'
 require 'nokogiri'
 require 'net/http'
 require 'andand'

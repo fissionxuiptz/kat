@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require File.dirname(__FILE__) + '/../../lib/kat/search'
+require_relative '../../lib/kat/search'
 
 blue_peter = Kat.search
 blue_peter.go.go 1

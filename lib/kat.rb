@@ -1,1 +1,1 @@
-require File.dirname(__FILE__) + '/kat/search'
+require_relative 'kat/search'
