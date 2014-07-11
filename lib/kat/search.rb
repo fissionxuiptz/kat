@@ -42,18 +42,16 @@ module Kat
     def self.field_map(type = nil)
       return FIELD_MAP.dup unless type
 
-      FIELD_MAP.reduce({}) do |hash, (k, v)|
-        hash.tap do |h|
-          case type
-          when :select
-            h[k] = { select: v[:select], id: v[:id] || k }
-          when :sort
-            h[k] = v[:sort] && h[v[:sort]] = v[:sort]
-            h[v[:id]] = v[:sort] if v[:id]
-          else
-            h[k] = v[type]
-          end if v[type]
-        end
+      FIELD_MAP.each_with_object({}) do |(k, v), h|
+        case type
+        when :select
+          h[k] = { select: v[:select], id: v[:id] || k }
+        when :sort
+          h[k] = v[:sort] && h[v[:sort]] = v[:sort]
+          h[v[:id]] = v[:sort] if v[:id]
+        else
+          h[k] = v[type]
+        end if v[type]
       end
     end
 
@@ -246,17 +244,15 @@ module Kat
 
       if (group = opts.css('optgroup')).empty?
         # Times, languages, platforms
-        opts.reject { |o| o.attributes.empty? }.reduce({}) do |p, o|
-          p.tap { |p1| p1[o.text] = o.attributes['value'].value }
+        opts.reject { |o| o.attributes.empty? }.each_with_object({}) do |o, p|
+          p[o.text] = o.attributes['value'].value
         end
       else
         # Categories
-        group.reduce({}) do |cat, og|
-          cat.tap do |c|
-            c[og.attributes['label'].value] = og.children.map do |o|
-              o.attributes['value'].value
-            end
-          end
+        group.each_with_object({}) do |og, cat|
+          cat[og.attributes['label'].value] = og.children.reject { |o| o.attributes.empty? }.map do |o|
+            o.attributes['value'].value
+          end if og.has_attribute? 'label'
         end
       end
     rescue => e
