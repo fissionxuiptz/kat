@@ -1,10 +1,12 @@
 require 'minitest/autorun'
 require_relative '../../lib/kat/search'
 
-blue_peter = Kat.search
-blue_peter.go.go 1
-
 describe Kat::Search do
+  let(:blue_peter) do
+    Kat.search do |k|
+      k.go.go 1
+    end
+  end
 
   let(:kat) { Kat.search 'test' }
   let(:kat_opts) { Kat.search 'test', category: 'books' }
@@ -39,13 +41,16 @@ describe Kat::Search do
     end
 
     it 'responds to result fields after a search' do
+      blue_peter.search # trigger page parse?
       %i(titles files).each do |s|
         blue_peter.respond_to?(s).must_equal true
       end
     end
 
     it 'returns identical result sets' do
-      blue_peter.results[0].must_equal blue_peter.search
+      called = blue_peter.search
+      first_page = blue_peter.results[0]
+      first_page.must_equal called
     end
 
     it 'returns a full result set' do
