@@ -130,10 +130,6 @@ module Kat
       build_query
     end
 
-    def sort?
-      sorts.any? { |k, v| @options[:sort] && k == @options[:sort].intern }
-    end
-
     #
     # Perform the search, supplying an optional page number to search on. Returns
     # a result set limited to the 25 results Kickass Torrents returns itself. Will
@@ -150,7 +146,6 @@ module Kat
           if res.code == '301'
             path = Net::HTTP::Get.new(res.header['location'])
             res = Net::HTTP.start(uri.host) { |http| http.request path }
-            @message = { message: 'Sort is not functioning' } if sort?
           end
 
           @pages = 0 and return if res.code == '404'
