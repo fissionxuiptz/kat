@@ -2,7 +2,6 @@ require_relative 'version'
 require_relative 'field_map'
 require 'nokogiri'
 require 'net/http'
-require 'andand'
 
 module Kat
   BASE_URL     = 'http://kickass.to'
@@ -158,10 +157,10 @@ module Kat
           doc = Nokogiri::HTML(res.body)
 
           @results[page] = doc.xpath('//table[@class="data"]/tr[position()>1]/td[1]').map do |node|
-            { path:     node.css('a.torType').first.andand.attr('href'),
+            { path:     href_of(node, 'a.torType'),
               title:    node.css('a.cellMainLink').text,
-              magnet:   node.css('a.imagnet').first.andand.attr('href'),
-              download: node.css('a.idownload').last.andand.attr('href'),
+              magnet:   href_of(node, 'a.imagnet'),
+              download: href_of(node, 'a.idownload'),
               size:     (node = node.next_element).text,
               files:    (node = node.next_element).text.to_i,
               age:      (node = node.next_element).text,
@@ -319,6 +318,16 @@ module Kat
     def respond_to_missing?(method, include_private)
       !(@results.empty? || @results.first.empty?) &&
         (@results.first.first[method] || @results.first.first[method[0..-2].intern]) || super
+    end
+
+    private
+
+    # tries to find the first <selector> in <scope> and read its href
+    # attribute, returns nil elsewise
+    def href_of(scope, selector)
+      if node = scope.css(selector).first
+        node.attr('href')
+      end
     end
   end
 end
