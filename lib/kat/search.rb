@@ -315,10 +315,10 @@ module Kat
         (@results.first.first[method] || @results.first.first[method[0..-2].intern]) || super
     end
 
-    private
-
+    #
     # tries to find the first <selector> in <scope> and read its href
     # attribute, returns nil elsewise
+    #
     def href_of(scope, selector)
       if node = scope.css(selector).first
         node.attr('href')

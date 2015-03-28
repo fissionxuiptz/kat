@@ -1,6 +1,6 @@
 module Kat
   NAME = 'Kickass Torrents Search'
-  VERSION = '2.0.8'
+  VERSION = '2.0.9'
   MALEVOLENT_DICTATOR_FOR_LIFE = 'Fission Xuiptz'
   AUTHOR = MALEVOLENT_DICTATOR_FOR_LIFE
   VERSION_STR = "#{ NAME } #{ VERSION } (c) 2013 #{ MALEVOLENT_DICTATOR_FOR_LIFE }"
