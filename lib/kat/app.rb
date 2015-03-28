@@ -4,6 +4,7 @@ require_relative 'colour'
 
 require 'highline'
 require 'yaml'
+require 'io/console'
 
 module Kat
   #
@@ -94,7 +95,9 @@ module Kat
     # Get the width of the terminal window
     #
     def set_window_width
-      @window_width = @h.terminal_size[0]
+      # Highline 1.7's terminal_size cannot be trusted to return the values in
+      # the correct order so just use IO.console.winsize directly
+      @window_width = IO.console.winsize[1]
     end
 
     #
