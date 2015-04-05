@@ -155,7 +155,7 @@ module Kat
             { path:     href_of(node, 'a.torType'),
               title:    node.css('a.cellMainLink').text,
               magnet:   href_of(node, 'a.imagnet'),
-              download: href_of(node, 'a.idownload'),
+              download: href_of(node, 'a.idownload[title="Download torrent file"]'),
               size:     (node = node.next_element).text,
               files:    (node = node.next_element).text.to_i,
               age:      (node = node.next_element).text,
