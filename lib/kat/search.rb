@@ -4,7 +4,7 @@ require 'nokogiri'
 require 'net/http'
 
 module Kat
-  BASE_URL     = 'http://kickass.to'
+  BASE_URL     = 'https://kat.cr'
   RECENT_PATH  = 'new'
   SEARCH_PATH  = 'usearch'
   ADVANCED_URL = "#{ BASE_URL }/torrents/search/advanced/"
@@ -151,11 +151,11 @@ module Kat
 
           doc = Nokogiri::HTML(res.body)
 
-          @results[page] = doc.xpath('//table[@class="data"]/tr[position()>1]/td[1]').map do |node|
+          @results[page] = doc.xpath('//table[@class="data"]//tr[position()>1]/td[1]').map do |node|
             { path:     href_of(node, 'a.torType'),
               title:    node.css('a.cellMainLink').text,
-              magnet:   href_of(node, 'a.imagnet'),
-              download: href_of(node, 'a.idownload[title="Download torrent file"]'),
+              magnet:   href_of(node, 'a[title="Torrent magnet link"]'),
+              download: href_of(node, 'a[title="Download torrent file"]'),
               size:     (node = node.next_element).text,
               files:    (node = node.next_element).text.to_i,
               age:      (node = node.next_element).text,
@@ -225,9 +225,16 @@ module Kat
         k == label.intern
       end
 
-      url = URI(ADVANCED_URL)
+      uri = URI(ADVANCED_URL)
+      req = Net::HTTP.get_response(uri)
+      if req.code == '301'
+        path = Net::HTTP::Get.new(req.header['location'])
+        req = Net::HTTP.start(uri.host) { |http| http.request path }
+      end
 
-      req = Net::HTTP.start(url.host) { |http| http.get url }
+      # url = URI(ADVANCED_URL)
+      #
+      # req = Net::HTTP.start(url.host) { |http| http.get url }
       @@doc ||= Nokogiri::HTML(req.body)
 
       opts = @@doc.css('table.formtable td').detect do |e|

@@ -54,8 +54,8 @@ describe Kat::Search do
     end
 
     it 'returns a full result set' do
-      blue_peter.search(1).size.must_equal 25
-      blue_peter.titles.size.must_equal 50
+      (blue_peter.search(1).size > 10).must_equal true
+      (blue_peter.titles.size > 30).must_equal true
     end
 
     it 'returns a valid query string with options' do
