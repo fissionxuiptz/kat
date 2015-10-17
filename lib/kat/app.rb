@@ -258,8 +258,12 @@ module Kat
     def download(torrent)
       return [:failed, 'no download link available'].red unless torrent[:download]
 
-      uri = URI(URI.encode torrent[:download])
+      # Lazy hack. Future Me won't be happy ¯\_(ツ)_/¯
+      unless (uri = URI(URI.encode torrent[:download])).scheme
+        uri = URI(URI.encode "https:#{torrent[:download]}")
+      end
       uri.query = nil
+
       file = "#{ @options[:output] || '.' }/" \
              "#{ torrent[:title].tr(' ', ?.).gsub(/[^a-z0-9()_.-]/i, '') }.torrent"
 
